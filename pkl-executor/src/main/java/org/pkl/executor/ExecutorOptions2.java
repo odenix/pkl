@@ -31,6 +31,7 @@ import org.pkl.executor.spi.v1.ExecutorSpiOptions2;
 public class ExecutorOptions2 extends ExecutorOptions {
   protected final List<Path> certificateFiles;
   protected final List<URI> certificateUris;
+  protected final int testPort;
 
   /**
    * Constructs an options object.
@@ -49,6 +50,7 @@ public class ExecutorOptions2 extends ExecutorOptions {
    * @param projectDir API equivalent of the {@code --project-dir} CLI option.
    * @param certificateFiles API equivalent of the {@code --ca-certificates} CLI option
    * @param certificateUris API equivalent of the {@code --ca-certificates} CLI option
+   * @param testPort API equivalent of the {@code --test-port} CLI option
    */
   public ExecutorOptions2(
       List<String> allowedModules,
@@ -62,7 +64,8 @@ public class ExecutorOptions2 extends ExecutorOptions {
       /* @Nullable */ Path moduleCacheDir,
       /* @Nullable */ Path projectDir,
       List<Path> certificateFiles,
-      List<URI> certificateUris) {
+      List<URI> certificateUris,
+      int testPort) {
 
     super(
         allowedModules,
@@ -77,6 +80,7 @@ public class ExecutorOptions2 extends ExecutorOptions {
         projectDir);
     this.certificateFiles = certificateFiles;
     this.certificateUris = certificateUris;
+    this.testPort = testPort;
   }
 
   /** API equivalent of the {@code --ca-certificates} CLI option. */
@@ -87,6 +91,11 @@ public class ExecutorOptions2 extends ExecutorOptions {
   /** API equivalent of the {@code --ca-certificates} CLI option. */
   public List<URI> getCertificateUris() {
     return certificateUris;
+  }
+
+  /** API equivalent of the {@code --test-port} CLI option. */
+  public int getTestPort() {
+    return testPort;
   }
 
   @Override
@@ -106,7 +115,8 @@ public class ExecutorOptions2 extends ExecutorOptions {
         && Objects.equals(moduleCacheDir, other.moduleCacheDir)
         && Objects.equals(projectDir, other.projectDir)
         && Objects.equals(certificateFiles, other.certificateFiles)
-        && Objects.equals(certificateUris, other.certificateUris);
+        && Objects.equals(certificateUris, other.certificateUris)
+        && testPort == other.testPort;
   }
 
   @Override
@@ -123,7 +133,8 @@ public class ExecutorOptions2 extends ExecutorOptions {
         moduleCacheDir,
         projectDir,
         certificateFiles,
-        certificateUris);
+        certificateUris,
+        testPort);
   }
 
   @Override
@@ -153,6 +164,8 @@ public class ExecutorOptions2 extends ExecutorOptions {
         + certificateFiles
         + ", certificateUris="
         + certificateUris
+        + ", testPort="
+        + testPort
         + '}';
   }
 
@@ -169,6 +182,7 @@ public class ExecutorOptions2 extends ExecutorOptions {
         moduleCacheDir,
         projectDir,
         certificateFiles,
-        certificateUris);
+        certificateUris,
+        testPort);
   }
 }

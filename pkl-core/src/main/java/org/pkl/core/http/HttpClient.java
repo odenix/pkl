@@ -109,6 +109,15 @@ public interface HttpClient extends AutoCloseable {
     Builder addBuiltInCertificates();
 
     /**
+     * Sets a test server's listening port.
+     *
+     * <p>If set, requests that specify port 12110 are rewritten to use the given port. This enables
+     * users of this client to connect to a test server without having to know its (ephemeral)
+     * listening port.
+     */
+    Builder setTestPort(int port);
+
+    /**
      * Creates a new {@code HttpClient} from the current state of this builder.
      *
      * @throws HttpClientInitException if an error occurs while initializing the client

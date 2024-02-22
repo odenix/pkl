@@ -132,15 +132,18 @@ public class ExecutorSpiImpl implements ExecutorSpi {
   private HttpClient getOrCreateHttpClient(ExecutorSpiOptions options) {
     List<Path> certificateFiles;
     List<URI> certificateUris;
+    int testPort;
     if (options instanceof ExecutorSpiOptions2) {
       var options2 = (ExecutorSpiOptions2) options;
       certificateFiles = options2.getCertificateFiles();
       certificateUris = options2.getCertificateUris();
+      testPort = options2.getTestPort();
     } else {
       certificateFiles = List.of();
       certificateUris = List.of();
+      testPort = -1;
     }
-    var clientKey = new HttpClientKey(certificateFiles, certificateUris);
+    var clientKey = new HttpClientKey(certificateFiles, certificateUris, testPort);
     return httpClients.computeIfAbsent(
         clientKey,
         (key) -> {
@@ -151,6 +154,7 @@ public class ExecutorSpiImpl implements ExecutorSpi {
           for (var uri : key.certificateUris) {
             builder.addCertificates(uri);
           }
+          builder.setTestPort(key.testPort);
           // If the above didn't add any certificates,
           // builder will use the JVM's default SSL context.
           return builder.buildLazily();
@@ -160,11 +164,13 @@ public class ExecutorSpiImpl implements ExecutorSpi {
   private static final class HttpClientKey {
     final Set<Path> certificateFiles;
     final Set<URI> certificateUris;
+    final int testPort;
 
-    HttpClientKey(List<Path> certificateFiles, List<URI> certificateUris) {
+    HttpClientKey(List<Path> certificateFiles, List<URI> certificateUris, int testPort) {
       // also serve as defensive copies
       this.certificateFiles = Set.copyOf(certificateFiles);
       this.certificateUris = Set.copyOf(certificateUris);
+      this.testPort = testPort;
     }
 
     @Override
@@ -177,12 +183,13 @@ public class ExecutorSpiImpl implements ExecutorSpi {
       }
       HttpClientKey that = (HttpClientKey) obj;
       return certificateFiles.equals(that.certificateFiles)
-          && certificateUris.equals(that.certificateUris);
+          && certificateUris.equals(that.certificateUris)
+          && testPort == that.testPort;
     }
 
     @Override
     public int hashCode() {
-      return Objects.hash(certificateFiles, certificateUris);
+      return Objects.hash(certificateFiles, certificateUris, testPort);
     }
   }
 }

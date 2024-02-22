@@ -34,6 +34,7 @@ final class HttpClientBuilder implements HttpClient.Builder {
   private Duration requestTimeout = Duration.ofSeconds(60);
   private final List<Path> certificateFiles = new ArrayList<>();
   private final List<URI> certificateUris = new ArrayList<>();
+  private int testPort = -1;
 
   HttpClientBuilder() {
     this(Path.of(System.getProperty("user.home")));
@@ -102,6 +103,12 @@ final class HttpClientBuilder implements HttpClient.Builder {
   }
 
   @Override
+  public HttpClient.Builder setTestPort(int port) {
+    testPort = port;
+    return this;
+  }
+
+  @Override
   public HttpClient build() {
     return doBuild().get();
   }
@@ -117,7 +124,7 @@ final class HttpClientBuilder implements HttpClient.Builder {
     var certificateUris = List.copyOf(this.certificateUris);
     return () -> {
       var jdkClient = new JdkHttpClient(certificateFiles, certificateUris, connectTimeout);
-      return new RequestRewritingClient(userAgent, requestTimeout, jdkClient);
+      return new RequestRewritingClient(userAgent, requestTimeout, testPort, jdkClient);
     };
   }
 

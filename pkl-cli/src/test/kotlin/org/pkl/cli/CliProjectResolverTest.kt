@@ -18,7 +18,7 @@ package org.pkl.cli
 import java.io.StringWriter
 import java.nio.file.Path
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.BeforeAll
+import org.junit.jupiter.api.AfterAll
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
@@ -29,10 +29,12 @@ import org.pkl.commons.test.PackageServer
 
 class CliProjectResolverTest {
   companion object {
-    @BeforeAll
+    private val packageServer = PackageServer()
+
+    @AfterAll
     @JvmStatic
-    fun beforeAll() {
-      PackageServer.ensureStarted()
+    fun afterAll() {
+      packageServer.close()
     }
   }
 
@@ -228,7 +230,10 @@ class CliProjectResolverTest {
         .trimIndent()
     )
     CliProjectResolver(
-        CliBaseOptions(caCertificates = listOf(FileTestUtils.selfSignedCertificate)),
+        CliBaseOptions(
+          caCertificates = listOf(FileTestUtils.selfSignedCertificate),
+          testPort = packageServer.port
+        ),
         listOf(projectDir),
         consoleWriter = StringWriter(),
         errWriter = StringWriter()
@@ -377,7 +382,10 @@ class CliProjectResolverTest {
     val consoleOut = StringWriter()
     val errOut = StringWriter()
     CliProjectResolver(
-        CliBaseOptions(caCertificates = listOf(FileTestUtils.selfSignedCertificate)),
+        CliBaseOptions(
+          caCertificates = listOf(FileTestUtils.selfSignedCertificate),
+          testPort = packageServer.port
+        ),
         listOf(tempDir.resolve("project1"), tempDir.resolve("project2")),
         consoleWriter = consoleOut,
         errWriter = errOut

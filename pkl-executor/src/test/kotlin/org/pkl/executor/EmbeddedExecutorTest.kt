@@ -138,7 +138,8 @@ class EmbeddedExecutorTest {
         options.moduleCacheDir,
         options.projectDir,
         listOf(),
-        listOf()
+        listOf(),
+        -1
       )
 
     private fun convertToOptions1(options: ExecutorOptions): ExecutorOptions =
@@ -265,7 +266,8 @@ class EmbeddedExecutorTest {
             null,
             null,
             listOf(),
-            listOf()
+            listOf(),
+            -1
           )
         ))
     }
@@ -302,7 +304,8 @@ class EmbeddedExecutorTest {
             null,
             null,
             listOf(),
-            listOf()
+            listOf(),
+            -1
           ))
         )
     }
@@ -340,7 +343,8 @@ class EmbeddedExecutorTest {
           null,
           null,
           listOf(),
-          listOf()
+          listOf(),
+          -1
         ))
       )
 
@@ -392,7 +396,8 @@ class EmbeddedExecutorTest {
           null,
           null,
           listOf(),
-          listOf()
+          listOf(),
+          -1
         )
       )
     )
@@ -434,7 +439,8 @@ class EmbeddedExecutorTest {
             null,
             null,
             listOf(),
-            listOf()
+            listOf(),
+            -1
           )
         ))
     }
@@ -476,7 +482,8 @@ class EmbeddedExecutorTest {
             null,
             null,
             listOf(),
-            listOf()
+            listOf(),
+            -1
           ))
         )
     }
@@ -499,8 +506,8 @@ class EmbeddedExecutorTest {
       chirpy = new Bird { name = "Chirpy"; favoriteFruit { name = "Orange" } }
     """.trimIndent()
     )
-    PackageServer.ensureStarted()
-    val result = currentExecutor.evaluatePath(pklFile,
+    val result = PackageServer().use { server ->
+      currentExecutor.evaluatePath(pklFile,
         ExecutorOptions2(
           listOf("file:", "package:", "https:"),
           listOf("prop:", "package:", "https:"),
@@ -513,8 +520,10 @@ class EmbeddedExecutorTest {
           cacheDir,
           null,
           listOf(FileTestUtils.selfSignedCertificate),
-          listOf())
+          listOf(),
+          server.port)
       )
+    }
     assertThat(result.trim()).isEqualTo("""
       chirpy {
         name = "Chirpy"
@@ -588,7 +597,8 @@ class EmbeddedExecutorTest {
           cacheDir,
           projectDir,
           listOf(),
-          listOf())
+          listOf(),
+          -1)
       ))
     assertThat(result).isEqualTo("""
       result {

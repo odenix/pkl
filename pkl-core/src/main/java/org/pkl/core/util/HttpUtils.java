@@ -17,6 +17,7 @@ package org.pkl.core.util;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.http.HttpResponse;
 
@@ -46,5 +47,23 @@ public final class HttpUtils {
 
     throw new IOException(
         ErrorMessages.create("badHttpStatusCode", response.statusCode(), response.uri()));
+  }
+
+  public static URI setPort(URI uri, int port) {
+    if (port < 0 || port > 65535) {
+      throw new IllegalArgumentException(String.valueOf(port));
+    }
+    try {
+      return new URI(
+          uri.getScheme(),
+          uri.getUserInfo(),
+          uri.getHost(),
+          port,
+          uri.getPath(),
+          uri.getQuery(),
+          uri.getFragment());
+    } catch (URISyntaxException e) {
+      throw new AssertionError(e); // only port changed
+    }
   }
 }
