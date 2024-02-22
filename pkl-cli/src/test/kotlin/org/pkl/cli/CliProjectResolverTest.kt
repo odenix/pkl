@@ -42,7 +42,7 @@ class CliProjectResolverTest {
   fun `missing PklProject when inferring a project dir`(@TempDir tempDir: Path) {
     val packager =
       CliProjectResolver(
-        CliBaseOptions(workingDir = tempDir),
+        CliBaseOptions(workingDir = tempDir, noCache = true),
         emptyList(),
         consoleWriter = StringWriter(),
         errWriter = StringWriter()
@@ -55,7 +55,7 @@ class CliProjectResolverTest {
   fun `missing PklProject when explicit dir is provided`(@TempDir tempDir: Path) {
     val packager =
       CliProjectResolver(
-        CliBaseOptions(),
+        CliBaseOptions(noCache = true),
         listOf(tempDir),
         consoleWriter = StringWriter(),
         errWriter = StringWriter()
@@ -82,7 +82,9 @@ class CliProjectResolverTest {
     CliProjectResolver(
         CliBaseOptions(
           workingDir = tempDir,
-          caCertificates = listOf(FileTestUtils.selfSignedCertificate)
+          caCertificates = listOf(FileTestUtils.selfSignedCertificate),
+          testPort = packageServer.port,
+          noCache = true
         ),
         listOf(tempDir),
         consoleWriter = StringWriter(),
@@ -135,7 +137,9 @@ class CliProjectResolverTest {
     CliProjectResolver(
         CliBaseOptions(
           workingDir = tempDir,
-          caCertificates = listOf(FileTestUtils.selfSignedCertificate)
+          caCertificates = listOf(FileTestUtils.selfSignedCertificate),
+          testPort = packageServer.port,
+          noCache = true
         ),
         emptyList(),
         consoleWriter = StringWriter(),
@@ -232,7 +236,8 @@ class CliProjectResolverTest {
     CliProjectResolver(
         CliBaseOptions(
           caCertificates = listOf(FileTestUtils.selfSignedCertificate),
-          testPort = packageServer.port
+          testPort = packageServer.port,
+          noCache = true
         ),
         listOf(projectDir),
         consoleWriter = StringWriter(),
@@ -311,7 +316,11 @@ class CliProjectResolverTest {
     val consoleOut = StringWriter()
     val errOut = StringWriter()
     CliProjectResolver(
-        CliBaseOptions(caCertificates = listOf(FileTestUtils.selfSignedCertificate)),
+        CliBaseOptions(
+          caCertificates = listOf(FileTestUtils.selfSignedCertificate),
+          testPort = packageServer.port,
+          noCache = true
+        ),
         listOf(projectDir),
         consoleWriter = consoleOut,
         errWriter = errOut
@@ -384,7 +393,8 @@ class CliProjectResolverTest {
     CliProjectResolver(
         CliBaseOptions(
           caCertificates = listOf(FileTestUtils.selfSignedCertificate),
-          testPort = packageServer.port
+          testPort = packageServer.port,
+          noCache = true
         ),
         listOf(tempDir.resolve("project1"), tempDir.resolve("project2")),
         consoleWriter = consoleOut,
