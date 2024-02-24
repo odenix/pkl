@@ -1,5 +1,3 @@
-import org.jetbrains.kotlin.utils.keysToMap
-
 plugins {
   pklAllProjects
   pklJavaLibrary
@@ -70,4 +68,30 @@ signing {
       sign(this)
     }
   }
+}
+
+tasks.compileTestKotlin {
+  // Work around a conflict between Pkl's and Gradle's
+  // Kotlin dependencies on the test compile class path.
+  //
+  // My preferred solution would be to clean up the test 
+  // compile class path to no longer contain a Gradle distribution. 
+  // However, my Gradle knowledge proved insufficient to accomplish this.
+  //
+  // Another potential workaround is to port plugin tests to Java.
+  // (If the plugin was written in Kotlin, its compilation would 
+  // currently fail with the same error.)
+  kotlinOptions {
+    freeCompilerArgs += "-Xskip-metadata-version-check"
+  }
+}
+
+// for debugging
+val printCompileClasspath by tasks.registering {
+  doLast { println(configurations.compileClasspath.get().files) }
+}
+
+// for debugging
+val printTestCompileClasspath by tasks.registering {
+  doLast { println(configurations.testCompileClasspath.get().files) }
 }

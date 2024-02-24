@@ -28,7 +28,7 @@ abstract class AbstractTest {
       .withProjectDir(testProjectDir.toFile())
       .withArguments("--stacktrace", "--no-build-cache", taskName)
       .withPluginClasspath()
-      .withDebug(true)
+      //.withDebug(true)
 
     if (gradleVersion != null) {
       runner.withGradleVersion(gradleVersion)
