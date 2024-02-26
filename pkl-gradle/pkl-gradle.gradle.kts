@@ -1,6 +1,7 @@
 plugins {
   pklAllProjects
   pklJavaLibrary
+  pklJavaDocs
   pklGradlePluginTest
 
   `java-gradle-plugin`

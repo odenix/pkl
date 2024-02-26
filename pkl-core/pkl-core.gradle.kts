@@ -3,6 +3,7 @@ import org.apache.tools.ant.filters.ReplaceTokens
 plugins {
   kotlin("jvm") // for `src/generator/kotlin`
   pklAllProjects
+  pklJavaDocs
   pklJavaLibrary
   pklPublishLibrary
   pklNativeBuild

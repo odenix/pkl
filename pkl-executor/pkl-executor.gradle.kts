@@ -1,5 +1,6 @@
 plugins {
   pklAllProjects
+  pklJavaDocs
   pklJavaLibrary
   pklPublishLibrary
   pklKotlinTest

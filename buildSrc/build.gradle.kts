@@ -1,10 +1,9 @@
-import org.jetbrains.kotlin.config.JvmTarget
-
 plugins {
   `kotlin-dsl`
 }
 
 dependencies {
+  implementation(libs.dokkaPlugin)
   implementation(libs.downloadTaskPlugin)
   implementation(libs.spotlessPlugin)
   implementation(libs.kotlinPlugin) {

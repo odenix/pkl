@@ -2,6 +2,7 @@ rootProject.name = "pkl"
 
 include("bench")
 include("docs")
+include("docs:api")
 include("stdlib")
 
 include("pkl-certs")
@@ -48,5 +49,6 @@ if (gradle.startParameter.taskNames.contains("updateDependencyLocks") ||
 for (prj in rootProject.children) {
   prj.buildFileName = "${prj.name}.gradle.kts"
 }
+project(":docs:api").buildFileName = "docs-api.gradle.kts"
 
 enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")

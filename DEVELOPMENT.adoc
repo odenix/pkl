@@ -35,7 +35,7 @@ gw build         # build everything except native executables
 gw buildNative   # build macOS executable on macOS,
                  # Linux and Alpine executables on Linux
                  # (Alpine executable is only built if ~/staticdeps/bin/musl-gcc exists)
-
+gw apiDocs       # Generate Java and Kotlin API docs
 pkl-cli/build/executable/jpkl                   # run Java executable
 pkl-cli/build/executable/pkl-macos-amd64        # run Mac executable
 pkl-cli/build/executable/pkl-linux-amd64        # run Linux executable

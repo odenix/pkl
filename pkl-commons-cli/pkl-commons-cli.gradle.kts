@@ -1,5 +1,6 @@
 plugins {
   pklAllProjects
+  pklKotlinDocs
   pklKotlinLibrary
   pklPublishLibrary
 }
