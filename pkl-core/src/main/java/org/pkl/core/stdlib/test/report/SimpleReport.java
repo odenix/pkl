@@ -18,9 +18,9 @@ package org.pkl.core.stdlib.test.report;
 import java.io.IOException;
 import java.io.Writer;
 import java.util.stream.Collectors;
-import org.pkl.core.runtime.TestResults;
-import org.pkl.core.runtime.TestResults.Failure;
-import org.pkl.core.runtime.TestResults.TestResult;
+import org.pkl.core.runtime.test.TestResults;
+import org.pkl.core.runtime.test.TestResults.Failure;
+import org.pkl.core.runtime.test.TestResults.TestResult;
 import org.pkl.core.util.StringUtils;
 
 public class SimpleReport implements TestReport {

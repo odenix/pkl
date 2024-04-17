@@ -84,18 +84,26 @@ public final class VmObjectFactory<E> {
     return doAddProperty(name, new PropertyNode<>(impl));
   }
 
+  public VmObjectFactory<E> addIndexedProperty(Identifier name, int index) {
+    return doAddProperty(name, new IndexedPropertyNode(index));
+  }
+
   @TruffleBoundary
   private VmObjectFactory<E> doAddProperty(String name, ExpressionNode bodyNode) {
+    return doAddProperty(Identifier.get(name), bodyNode);
+  }
+
+  @TruffleBoundary
+  private VmObjectFactory<E> doAddProperty(Identifier name, ExpressionNode bodyNode) {
     var section = VmUtils.unavailableSourceSection();
-    var identifier = Identifier.get(name);
-    var member = new ObjectMember(section, section, VmModifier.NONE, identifier, name);
+    var member = new ObjectMember(section, section, VmModifier.NONE, name, name.toString());
     //noinspection ConstantConditions
     var node =
         isPropertyTypeChecked
             ? TypeCheckedPropertyNodeGen.create(null, new FrameDescriptor(), member, bodyNode)
             : new UntypedObjectMemberNode(null, new FrameDescriptor(), member, bodyNode);
     member.initMemberNode(node);
-    if (members.put(identifier, member) != null) {
+    if (members.put(name, member) != null) {
       throw new VmExceptionBuilder()
           .bug(
               "Duplicate definition of property `"
@@ -202,6 +210,24 @@ public final class VmObjectFactory<E> {
     @SuppressWarnings("unchecked")
     private T doExecute(VmObjectLike owner) {
       return impl.evaluate((E) owner.getExtraStorage());
+    }
+  }
+
+  private static final class IndexedPropertyNode extends ExpressionNode {
+    private final int index;
+
+    public IndexedPropertyNode(int index) {
+      this.index = index;
+    }
+
+    @Override
+    public Object executeGeneric(VirtualFrame frame) {
+      return doExecute(VmUtils.getOwner(frame));
+    }
+
+    @TruffleBoundary
+    private Object doExecute(VmObjectLike owner) {
+      return ((Object[]) owner.getExtraStorage())[index];
     }
   }
 }

@@ -1,0 +1,155 @@
+/**
+ * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.pkl.core.runtime.test.jqwik;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+import org.pkl.core.util.Nullable;
+
+public class LambdaSupport {
+
+  private LambdaSupport() {}
+
+  private static class FieldAccessor {
+    final boolean isFunctionalType;
+    final MethodHandle handle;
+
+    FieldAccessor(boolean isFunctionalType, MethodHandle handle) {
+      this.isFunctionalType = isFunctionalType;
+      this.handle = handle;
+    }
+  }
+
+  private static final MethodHandles.Lookup LOOKUP = MethodHandles.lookup();
+
+  /**
+   * Returns field accessor for the given class, or {@code null} if accessors are not available
+   * (e.g. no reflective access to the class)
+   */
+  private static final ClassValue<List<FieldAccessor>> FIELD_ACCESSORS =
+      new ClassValue<List<FieldAccessor>>() {
+        @Override
+        protected @Nullable List<FieldAccessor> computeValue(Class<?> type) {
+          Field[] fields = type.getDeclaredFields();
+          List<FieldAccessor> res = new ArrayList<>(fields.length);
+          try {
+            for (Field field : fields) {
+              // Javadoc of LOOKUP.unreflectGetter(..) suggests that this may be necessary in some
+              // cases:
+              field.setAccessible(true);
+              res.add(
+                  new FieldAccessor(
+                      isFunctionalType(field.getType()), LOOKUP.unreflectGetter(field)));
+            }
+          } catch (Throwable e) {
+            // As of Java 17, field.setAccessible(..) throws IllegalAccessException
+            // if the field is private and not opened to jqwik, Predicate.not() will create lambda
+            // instances with private fields.
+            return null;
+          }
+          return res;
+        }
+      };
+
+  /**
+   * This method is used in {@linkplain Object#equals(Object)} implementations of {@linkplain
+   * Arbitrary} types to allow memoization of generators.
+   *
+   * <p>Comparing two lambdas by their implementation class works if they don't access an enclosing
+   * object's state. When in doubt, fail comparison.
+   */
+  public static <T> boolean areEqual(T l1, T l2) {
+    if (l1 == l2) return true;
+    if (l1.equals(l2)) return true;
+
+    Class<?> l1Class = l1.getClass();
+    if (l1Class != l2.getClass()) return false;
+
+    if (l1 instanceof Serializable) {
+      try {
+        return Arrays.equals(serialize(l1), serialize(l2));
+      } catch (IOException e) {
+        // ignore
+      }
+    }
+
+    // Check enclosed state the hard way
+    List<FieldAccessor> accessors = FIELD_ACCESSORS.get(l1Class);
+    if (accessors == null) {
+      return false;
+    }
+    for (FieldAccessor accessor : accessors) {
+      if (!fieldIsEqualIn(accessor, l1, l2)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static <T> byte[] serialize(T l1) throws IOException {
+    ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+    ObjectOutputStream outputStream = new ObjectOutputStream(byteArrayOutputStream);
+    outputStream.writeObject(l1);
+    return byteArrayOutputStream.toByteArray();
+  }
+
+  private static boolean fieldIsEqualIn(FieldAccessor field, Object left, Object right) {
+    try {
+      // If field is a functional type use LambdaSupport.areEqual().
+      // TODO: Could there be circular references among functional types?
+      MethodHandle handle = field.handle;
+      if (field.isFunctionalType) {
+        return areEqual(handle.invoke(left), handle.invoke(right));
+      }
+      return handle.invoke(left).equals(handle.invoke(right));
+    } catch (Throwable e) {
+      // As of Java 17, field.setAccessible(..) throws IllegalAccessException
+      // if the field is private and not opened to jqwik, Predicate.not() will create lambda
+      // instances with private fields.
+      return false;
+    }
+  }
+
+  // TODO: This duplicates JqwikReflectionSupport.isFunctionalType() because module dependencies
+  private static boolean isFunctionalType(Class<?> candidateType) {
+    if (!candidateType.isInterface()) {
+      return false;
+    }
+    return countInterfaceMethods(candidateType) == 1;
+  }
+
+  private static long countInterfaceMethods(Class<?> candidateType) {
+    Method[] methods = candidateType.getMethods();
+    return findInterfaceMethods(methods).size();
+  }
+
+  private static List<Method> findInterfaceMethods(Method[] methods) {
+    return Arrays.stream(methods)
+        .filter(m -> !m.isDefault() && !Modifier.isStatic(m.getModifiers()))
+        .collect(Collectors.toList());
+  }
+}

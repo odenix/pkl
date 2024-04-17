@@ -41,6 +41,8 @@ public abstract class TypeConstraintNode extends PklNode {
 
   public abstract void execute(VirtualFrame frame);
 
+  public abstract ExpressionNode getBodyNode();
+
   public String export() {
     return getSourceSection().getCharacters().toString();
   }

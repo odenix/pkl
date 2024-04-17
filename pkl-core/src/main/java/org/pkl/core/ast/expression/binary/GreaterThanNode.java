@@ -19,13 +19,26 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.source.SourceSection;
+import org.pkl.core.ast.ExpressionNode;
+import org.pkl.core.ast.expression.ComparisonNode;
 import org.pkl.core.runtime.VmDataSize;
 import org.pkl.core.runtime.VmDuration;
 
 @NodeInfo(shortName = ">")
-public abstract class GreaterThanNode extends ComparatorNode {
+public abstract class GreaterThanNode extends ComparatorNode implements ComparisonNode {
   protected GreaterThanNode(SourceSection sourceSection) {
     super(sourceSection);
+  }
+
+  @Override
+  public abstract ExpressionNode getLeftNode();
+
+  @Override
+  public abstract ExpressionNode getRightNode();
+
+  @Override
+  public Operator getOperator() {
+    return Operator.GREATER_THAN;
   }
 
   @Specialization

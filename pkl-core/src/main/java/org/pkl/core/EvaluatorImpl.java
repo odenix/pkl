@@ -40,8 +40,6 @@ import org.pkl.core.runtime.BaseModule;
 import org.pkl.core.runtime.Identifier;
 import org.pkl.core.runtime.ModuleResolver;
 import org.pkl.core.runtime.ResourceManager;
-import org.pkl.core.runtime.TestResults;
-import org.pkl.core.runtime.TestRunner;
 import org.pkl.core.runtime.VmContext;
 import org.pkl.core.runtime.VmException;
 import org.pkl.core.runtime.VmExceptionBuilder;
@@ -53,6 +51,8 @@ import org.pkl.core.runtime.VmTyped;
 import org.pkl.core.runtime.VmUtils;
 import org.pkl.core.runtime.VmValue;
 import org.pkl.core.runtime.VmValueRenderer;
+import org.pkl.core.runtime.test.TestResults;
+import org.pkl.core.runtime.test.TestRunner;
 import org.pkl.core.util.ErrorMessages;
 import org.pkl.core.util.Nullable;
 
@@ -66,6 +66,7 @@ public class EvaluatorImpl implements Evaluator {
   protected final BufferedLogger logger;
   protected final PackageResolver packageResolver;
   private final VmValueRenderer vmValueRenderer = VmValueRenderer.singleLine(1000);
+  private final TestRunner testRunner;
 
   public EvaluatorImpl(
       StackFrameTransformer transformer,
@@ -85,6 +86,7 @@ public class EvaluatorImpl implements Evaluator {
     frameTransformer = transformer;
     moduleResolver = new ModuleResolver(factories);
     this.logger = new BufferedLogger(logger);
+    testRunner = new TestRunner(this.logger, frameTransformer);
     packageResolver = PackageResolver.getInstance(securityManager, httpClient, moduleCacheDir);
     polyglotContext =
         VmUtils.createContext(
@@ -231,12 +233,7 @@ public class EvaluatorImpl implements Evaluator {
 
   @Override
   public TestResults evaluateTest(ModuleSource moduleSource, boolean overwrite) {
-    return doEvaluate(
-        moduleSource,
-        (module) -> {
-          var testRunner = new TestRunner(logger, frameTransformer, overwrite);
-          return testRunner.run(module);
-        });
+    return doEvaluate(moduleSource, (module) -> testRunner.run(module, overwrite));
   }
 
   @Override
@@ -270,7 +267,7 @@ public class EvaluatorImpl implements Evaluator {
       packageResolver.close();
     } catch (IOException ignored) {
     }
-
+    testRunner.close();
     if (timeoutExecutor != null) {
       timeoutExecutor.shutdown();
     }

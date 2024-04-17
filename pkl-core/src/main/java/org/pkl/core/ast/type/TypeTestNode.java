@@ -35,6 +35,14 @@ public final class TypeTestNode extends ExpressionNode {
     this.unresolvedTypeNode = unresolvedTypeNode;
   }
 
+  public ExpressionNode getValueNode() {
+    return valueNode;
+  }
+
+  public UnresolvedTypeNode getUnresolvedTypeNode() {
+    return unresolvedTypeNode;
+  }
+
   @Override
   public Object executeGeneric(VirtualFrame frame) {
     return executeBoolean(frame);

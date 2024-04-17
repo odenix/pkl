@@ -16,8 +16,8 @@
 package org.pkl.core;
 
 import java.util.Map;
-import org.pkl.core.runtime.TestResults;
 import org.pkl.core.runtime.VmEvalException;
+import org.pkl.core.runtime.test.TestResults;
 
 /**
  * Evaluates a Pkl module through different modes of evaluation. Throws {@link VmEvalException} if

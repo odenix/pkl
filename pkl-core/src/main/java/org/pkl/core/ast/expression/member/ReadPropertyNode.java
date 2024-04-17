@@ -25,6 +25,7 @@ import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.source.SourceSection;
 import org.pkl.core.ast.ExpressionNode;
 import org.pkl.core.ast.MemberLookupMode;
+import org.pkl.core.ast.expression.InvocationNode;
 import org.pkl.core.ast.member.ClassProperty;
 import org.pkl.core.runtime.*;
 import org.pkl.core.util.Nullable;
@@ -32,7 +33,7 @@ import org.pkl.core.util.Nullable;
 @NodeInfo(shortName = ".")
 @ImportStatic(BaseModule.class)
 @NodeChild(value = "receiverNode", type = ExpressionNode.class)
-public abstract class ReadPropertyNode extends ExpressionNode {
+public abstract class ReadPropertyNode extends ExpressionNode implements InvocationNode {
   protected final Identifier propertyName;
   private final MemberLookupMode lookupMode;
   private final boolean needsConst;
@@ -59,6 +60,24 @@ public abstract class ReadPropertyNode extends ExpressionNode {
 
   protected ReadPropertyNode(SourceSection sourceSection, Identifier propertyName) {
     this(sourceSection, propertyName, MemberLookupMode.EXPLICIT_RECEIVER, false);
+  }
+
+  @Override
+  public abstract ExpressionNode getReceiverNode();
+
+  @Override
+  public Identifier getMemberName() {
+    return propertyName;
+  }
+
+  @Override
+  public ExpressionNode[] getArgumentNodes() {
+    return new ExpressionNode[0];
+  }
+
+  @Override
+  public boolean isPropertyInvocation() {
+    return true;
   }
 
   // This method effectively covers `VmObject receiver` but is implemented in a more

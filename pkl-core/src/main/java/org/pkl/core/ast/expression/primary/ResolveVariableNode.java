@@ -22,6 +22,7 @@ import org.pkl.core.ast.ConstantValueNode;
 import org.pkl.core.ast.ExpressionNode;
 import org.pkl.core.ast.MemberLookupMode;
 import org.pkl.core.ast.builder.ConstLevel;
+import org.pkl.core.ast.expression.InvocationNode;
 import org.pkl.core.ast.expression.member.ReadLocalPropertyNode;
 import org.pkl.core.ast.expression.member.ReadPropertyNodeGen;
 import org.pkl.core.ast.frame.ReadAuxiliarySlotNode;
@@ -30,6 +31,7 @@ import org.pkl.core.ast.frame.ReadEnclosingFrameSlotNodeGen;
 import org.pkl.core.ast.frame.ReadFrameSlotNodeGen;
 import org.pkl.core.ast.member.Member;
 import org.pkl.core.runtime.*;
+import org.pkl.core.util.Nullable;
 
 /**
  * Resolves a variable name, for example `foo` in `x = foo`.
@@ -49,7 +51,7 @@ import org.pkl.core.runtime.*;
 // :force x // Property not found: z
 // z = 1
 // :force x // should work but doesn't
-public final class ResolveVariableNode extends ExpressionNode {
+public final class ResolveVariableNode extends ExpressionNode implements InvocationNode {
   private final Identifier variableName;
   private final boolean isBaseModule;
   private final boolean isCustomThisScope;
@@ -69,6 +71,26 @@ public final class ResolveVariableNode extends ExpressionNode {
     this.isCustomThisScope = isCustomThisScope;
     this.constLevel = constLevel;
     this.constDepth = constDepth;
+  }
+
+  @Override
+  public Identifier getMemberName() {
+    return variableName;
+  }
+
+  @Override
+  public @Nullable ExpressionNode getReceiverNode() {
+    return null;
+  }
+
+  @Override
+  public ExpressionNode[] getArgumentNodes() {
+    return new ExpressionNode[0];
+  }
+
+  @Override
+  public boolean isPropertyInvocation() {
+    return true;
   }
 
   @Override

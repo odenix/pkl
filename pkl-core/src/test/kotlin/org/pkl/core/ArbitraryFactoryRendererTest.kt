@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.pkl.core.util.IoUtils
 
-class PropertiesRendererTest {
+class ArbitraryFactoryRendererTest {
   @Test
   fun `render document`() {
     val evaluator = Evaluator.preconfigured()

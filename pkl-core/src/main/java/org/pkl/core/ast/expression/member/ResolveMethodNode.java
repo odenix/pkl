@@ -24,10 +24,12 @@ import org.pkl.core.ast.ConstantValueNode;
 import org.pkl.core.ast.ExpressionNode;
 import org.pkl.core.ast.MemberLookupMode;
 import org.pkl.core.ast.builder.ConstLevel;
+import org.pkl.core.ast.expression.InvocationNode;
 import org.pkl.core.ast.expression.primary.*;
 import org.pkl.core.ast.internal.GetClassNodeGen;
 import org.pkl.core.ast.member.Member;
 import org.pkl.core.runtime.*;
+import org.pkl.core.util.Nullable;
 
 /**
  * Resolves a method name in a method call with implicit receiver, for example `bar` in `x = bar()`
@@ -41,7 +43,7 @@ import org.pkl.core.runtime.*;
  */
 // TODO: Consider doing this at parse time (cf. ResolveVariableNode).
 @NodeInfo(shortName = "resolveMethod")
-public final class ResolveMethodNode extends ExpressionNode {
+public final class ResolveMethodNode extends ExpressionNode implements InvocationNode {
   private final Identifier methodName;
   private final ExpressionNode[] argumentNodes;
   // Tells if the call site is inside the base module.
@@ -68,6 +70,26 @@ public final class ResolveMethodNode extends ExpressionNode {
     this.isCustomThisScope = isCustomThisScope;
     this.constLevel = constLevel;
     this.constDepth = constDepth;
+  }
+
+  @Override
+  public @Nullable ExpressionNode getReceiverNode() {
+    return null;
+  }
+
+  @Override
+  public Identifier getMemberName() {
+    return methodName;
+  }
+
+  @Override
+  public ExpressionNode[] getArgumentNodes() {
+    return argumentNodes;
+  }
+
+  @Override
+  public boolean isPropertyInvocation() {
+    return false;
   }
 
   @Override

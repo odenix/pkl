@@ -375,6 +375,14 @@ public abstract class UnresolvedTypeNode extends PklNode {
       this.defaultIndex = defaultIndex;
     }
 
+    public Set<String> getStringLiterals() {
+      return stringLiterals;
+    }
+
+    public int getDefaultIndex() {
+      return defaultIndex;
+    }
+
     @Override
     public TypeNode execute(VirtualFrame frame) {
       CompilerDirectives.transferToInterpreter();

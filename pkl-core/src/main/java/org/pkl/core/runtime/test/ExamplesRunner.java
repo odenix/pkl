@@ -13,89 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.pkl.core.runtime;
+package org.pkl.core.runtime.test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import org.pkl.core.BufferedLogger;
-import org.pkl.core.StackFrameTransformer;
-import org.pkl.core.ast.member.ObjectMember;
 import org.pkl.core.module.ModuleKeys;
-import org.pkl.core.runtime.TestResults.Error;
-import org.pkl.core.runtime.TestResults.Failure;
-import org.pkl.core.stdlib.PklConverter;
+import org.pkl.core.runtime.BaseModule;
+import org.pkl.core.runtime.Identifier;
+import org.pkl.core.runtime.ModuleInfo;
+import org.pkl.core.runtime.VmDynamic;
+import org.pkl.core.runtime.VmExceptionBuilder;
+import org.pkl.core.runtime.VmLanguage;
+import org.pkl.core.runtime.VmListing;
+import org.pkl.core.runtime.VmMapping;
+import org.pkl.core.runtime.VmNull;
+import org.pkl.core.runtime.VmObjectLike;
+import org.pkl.core.runtime.VmTyped;
+import org.pkl.core.runtime.VmUtils;
+import org.pkl.core.runtime.test.TestResults.Failure;
 import org.pkl.core.stdlib.base.PcfRenderer;
 import org.pkl.core.util.EconomicMaps;
 import org.pkl.core.util.MutableBoolean;
 import org.pkl.core.util.MutableReference;
 
-/** Runs test results examples and facts. */
-public class TestRunner {
-  private static final PklConverter converter = new PklConverter(VmMapping.empty());
-  private final boolean overwrite;
-  private final StackFrameTransformer stackFrameTransformer;
-  private final BufferedLogger logger;
-
-  public TestRunner(
-      BufferedLogger logger, StackFrameTransformer stackFrameTransformer, boolean overwrite) {
-    this.logger = logger;
-    this.stackFrameTransformer = stackFrameTransformer;
-    this.overwrite = overwrite;
-  }
-
-  public TestResults run(VmTyped testModule) {
-    var info = VmUtils.getModuleInfo(testModule);
-    var results = new TestResults(info.getModuleName(), getDisplayUri(info));
-
-    try {
-      checkAmendsPklTest(testModule);
-      runFacts(testModule, results);
-      runExamples(testModule, info, results);
-    } catch (VmException v) {
-      var meta = results.newResult(info.getModuleName());
-      meta.addError(new Error(v.getMessage(), v.toPklException(stackFrameTransformer)));
-    }
-    results.setErr(logger.getLogs());
-    return results;
-  }
-
-  private void checkAmendsPklTest(VmTyped value) {
-    var testModuleClass = TestModule.getModule().getVmClass();
-    var moduleClass = value.getVmClass();
-    while (moduleClass != testModuleClass) {
-      moduleClass = moduleClass.getSuperclass();
-      if (moduleClass == null) {
-        throw new VmExceptionBuilder().typeMismatch(value, testModuleClass).build();
-      }
-    }
-  }
-
-  private void runFacts(VmTyped testModule, TestResults results) {
-    var facts = VmUtils.readMember(testModule, Identifier.FACTS);
-    if (facts instanceof VmNull) return;
-
-    var factsMapping = (VmMapping) facts;
-    factsMapping.forceAndIterateMemberValues(
-        (groupKey, groupMember, groupValue) -> {
-          var result = results.newResult(String.valueOf(groupKey));
-          var groupListing = (VmListing) groupValue;
-          groupListing.forceAndIterateMemberValues(
-              ((factIndex, factMember, factValue) -> {
-                assert factValue instanceof Boolean;
-                if (factValue == Boolean.FALSE) {
-                  result.addFailure(
-                      Failure.buildFactFailure(
-                          factMember.getSourceSection(), getDisplayUri(factMember)));
-                }
-                return true;
-              }));
-          return true;
-        });
-  }
-
-  private void runExamples(VmTyped testModule, ModuleInfo info, TestResults results) {
+final class ExamplesRunner extends AbstractRunner {
+  void run(VmTyped testModule, TestResults results, ModuleInfo info, boolean overwrite) {
     var examples = VmUtils.readMember(testModule, Identifier.EXAMPLES);
     if (examples instanceof VmNull) return;
 
@@ -292,24 +236,5 @@ public class TestRunner {
       throw new VmExceptionBuilder().evalError("invalidOutputFileStructure", outputFile).build();
     }
     return examples;
-  }
-
-  private static String renderAsPcf(Object pklValue) {
-    var builder = new StringBuilder();
-    new PcfRenderer(builder, "  ", converter, false, false).renderValue(pklValue);
-    if (pklValue instanceof VmObject) {
-      builder.insert(0, "new ");
-    }
-    return builder.toString();
-  }
-
-  private static String getDisplayUri(ObjectMember member) {
-    return VmUtils.getDisplayUri(
-        member.getSourceSection(), VmContext.get(null).getFrameTransformer());
-  }
-
-  private static String getDisplayUri(ModuleInfo moduleInfo) {
-    return VmUtils.getDisplayUri(
-        moduleInfo.getModuleKey().getUri(), VmContext.get(null).getFrameTransformer());
   }
 }

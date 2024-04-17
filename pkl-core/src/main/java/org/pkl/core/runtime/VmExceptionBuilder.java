@@ -289,6 +289,11 @@ public class VmExceptionBuilder {
     return withMessage(message, args);
   }
 
+  public VmExceptionBuilder constraintViolated(String message) {
+    kind = VmException.Kind.CONSTRAINT_VIOLATED;
+    return withMessage(message);
+  }
+
   public VmExceptionBuilder withProgramValue(String name, Object value) {
     programValues.add(new ProgramValue(name, value));
     return this;
@@ -358,6 +363,17 @@ public class VmExceptionBuilder {
             memberName,
             hint,
             receiver);
+      case CONSTRAINT_VIOLATED:
+        return new VmConstraintViolatedException(
+            message,
+            cause,
+            isExternalMessage,
+            messageArguments,
+            programValues,
+            location,
+            sourceSection,
+            memberName,
+            hint);
       case BUG:
         return new VmBugException(
             message,

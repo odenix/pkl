@@ -83,6 +83,10 @@ public final class FunctionNode extends MemberNode {
     return paramCount;
   }
 
+  public TypeNode[] getParameterTypeNodes() {
+    return parameterTypeNodes;
+  }
+
   public @Nullable TypeNode getReturnTypeNode() {
     return returnTypeNode;
   }

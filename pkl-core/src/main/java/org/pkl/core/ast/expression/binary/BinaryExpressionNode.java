@@ -29,9 +29,9 @@ public abstract class BinaryExpressionNode extends ExpressionNode {
     super(sourceSection);
   }
 
-  protected abstract ExpressionNode getLeftNode();
+  public abstract ExpressionNode getLeftNode();
 
-  protected abstract ExpressionNode getRightNode();
+  public abstract ExpressionNode getRightNode();
 
   @Fallback
   @TruffleBoundary

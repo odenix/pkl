@@ -19,16 +19,29 @@ import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.source.SourceSection;
+import org.pkl.core.ast.ExpressionNode;
+import org.pkl.core.ast.expression.ComparisonNode;
 import org.pkl.core.runtime.VmDataSize;
 import org.pkl.core.runtime.VmDuration;
 
 @NodeInfo(shortName = "<=")
-public abstract class LessThanOrEqualNode extends BinaryExpressionNode {
+public abstract class LessThanOrEqualNode extends BinaryExpressionNode implements ComparisonNode {
   protected LessThanOrEqualNode(SourceSection sourceSection) {
     super(sourceSection);
   }
 
   public abstract boolean executeWith(Object left, Object right);
+
+  @Override
+  public abstract ExpressionNode getLeftNode();
+
+  @Override
+  public abstract ExpressionNode getRightNode();
+
+  @Override
+  public Operator getOperator() {
+    return Operator.LESS_THAN_OR_EQUAL;
+  }
 
   @Specialization
   @TruffleBoundary

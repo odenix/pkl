@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.pkl.core.runtime;
+package org.pkl.core.runtime.test;
 
 import com.oracle.truffle.api.source.SourceSection;
 import java.util.ArrayList;
@@ -154,6 +154,20 @@ public final class TestResults {
     public static Failure buildFactFailure(SourceSection sourceSection, String description) {
       return new Failure(
           "Fact Failure", sourceSection.getCharacters() + " ❌ (" + description + ")");
+    }
+
+    public static Failure buildPropertyFailure(
+        SourceSection sourceSection, String displayUri, String explanation) {
+      return new Failure(
+          "Property Failure",
+          sourceSection.getCharacters() + " ❌ (" + displayUri + ")\n" + explanation);
+    }
+
+    public static Failure buildPropertyGenerationFailure() {
+      return new Failure(
+          "Property Failure",
+          "Too many tries discarded by type constraints.\n"
+              + "Choose different constraints or increase `propertiesSettings.maxDiscardRatio`.");
     }
 
     public static Failure buildExampleLengthMismatchFailure(

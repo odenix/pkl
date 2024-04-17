@@ -168,7 +168,7 @@ public abstract class VmTypeMismatchException extends ControlFlowException {
       describe(builder, "");
 
       return new VmExceptionBuilder()
-          .adhocEvalError(builder.toString())
+          .constraintViolated(builder.toString())
           .withSourceSection(sourceSection);
     }
   }

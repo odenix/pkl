@@ -40,6 +40,17 @@ open module pkl.test
 /// ```
 facts: Mapping<String, Listing<Boolean>>?
 
+/// ```
+/// properties {
+///   ["reverse string"] { string: String ->
+///     string.reverse().reverse() == string
+///   }
+/// }
+/// ```
+properties: Mapping<String, (unknown) -> Listing<Boolean>>? = new {
+  default = (_) -> (arg: unknown) -> new Listing<Boolean> {}
+}
+
 /// Named groups of expressions whose results are expected to match results stored in _$filename-expected.pcf_.
 ///
 /// If _$filename-expected.pcf_ does not exist, it is generated based on the examples' actual results.
@@ -86,6 +97,8 @@ facts: Mapping<String, Listing<Boolean>>?
 /// delete _$filename-expected.pcf_ and evaluate the test module again.
 examples: Mapping<String, Listing<unknown>>?
 
+settings: Settings
+
 /// Applies [fun] and returns the error thrown.
 ///
 /// Throws if [fun] did not throw an error.
@@ -95,3 +108,14 @@ external const function catch(fun: () -> Any): String
 ///
 /// Returns [null] if [fun] did not throw an error.
 external const function catchOrNull(fun: () -> Any): String?
+
+class Settings {
+  properties: PropertiesSettings
+}
+
+class PropertiesSettings {
+  seed: Int?
+  tries: UInt16 = 100
+  maxDiscardRatio: Float(isBetween(0, 1)) = 0.9
+  maxShrinkTime: Duration(isPositive) = 10.s
+}

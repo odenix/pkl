@@ -134,6 +134,12 @@ public final class Identifier implements Comparable<Identifier> {
   // members of pkl.test
   public static final Identifier FACTS = get("facts");
   public static final Identifier EXAMPLES = get("examples");
+  public static final Identifier PROPERTIES = get("properties");
+  public static final Identifier SETTINGS = get("settings");
+  public static final Identifier TRIES = get("tries");
+  public static final Identifier MAX_DISCARD_RATIO = get("maxDiscardRatio");
+  public static final Identifier MAX_SHRINK_TIME = get("maxShrinkTime");
+  public static final Identifier SEED = get("seed");
 
   // members of pkl.benchmark
   public static final Identifier ITERATIONS = get("iterations");
@@ -154,6 +160,14 @@ public final class Identifier implements Comparable<Identifier> {
 
   // dummy, unrepresentable identifier
   public static final Identifier DUMMY = get("`#_");
+
+  // members used by TestRunner
+  public static final Identifier LENGTH = get("length");
+  public static final Identifier IS_BETWEEN = get("isBetween");
+  public static final Identifier IS_POSITIVE = get("isBetween");
+  public static final Identifier IS_ASCII = get("isAscii");
+  public static final Identifier HAS_CHARS_BETWEEN = get("hasCharsBetween");
+  public static final Identifier CONTAINS = get("contains");
 
   private final String name;
 

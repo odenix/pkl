@@ -168,6 +168,39 @@ public final class StringNodes {
     }
   }
 
+  public abstract static class isAscii extends ExternalPropertyNode {
+    @Specialization
+    @TruffleBoundary
+    protected boolean eval(String self) {
+      for (int i = 0; i < self.length(); i++) {
+        if (self.charAt(i) > 127) return false;
+      }
+      return true;
+    }
+  }
+
+  public abstract static class isWithinChars extends ExternalMethod1Node {
+    @Specialization
+    @TruffleBoundary
+    protected boolean eval(String self, VmSet chars) {
+      var codePoints = new HashSet<Integer>();
+      for (var ch : chars) {
+        codePoints.add(((String) ch).codePointAt(0));
+      }
+      return self.codePoints().allMatch(codePoints::contains);
+    }
+  }
+  
+  public abstract static class isWithinCharRange extends ExternalMethod2Node {
+    @Specialization
+    @TruffleBoundary
+    protected boolean eval(String self, String min, String max) {
+      var minCodePoint = min.codePointAt(0);
+      var maxCodePoint = max.codePointAt(0);
+      return self.codePoints().allMatch((it) -> it >= minCodePoint && it <= maxCodePoint);
+    }
+  }
+
   public abstract static class getOrNull extends ExternalMethod1Node {
     @TruffleBoundary
     @Specialization

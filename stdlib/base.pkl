@@ -1172,6 +1172,12 @@ external class String extends Any {
   /// ```
   external codePoints: List<Int(isBetween(0, 0x10FFFF))>(this.length == length)
 
+  external isAscii: Boolean
+
+  external function isWithinChars(chars: Set<Char>): Boolean
+    
+  external function isWithinCharRange(min: Char, max: Char): Boolean
+  
   /// Returns the character at [index], or [null] if [index] is out of range.
   ///
   /// Facts:

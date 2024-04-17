@@ -22,6 +22,7 @@ import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.NodeInfo;
 import com.oracle.truffle.api.source.SourceSection;
 import org.pkl.core.ast.ExpressionNode;
+import org.pkl.core.ast.expression.ComparisonNode;
 import org.pkl.core.runtime.*;
 import org.pkl.core.util.Nullable;
 
@@ -29,9 +30,14 @@ import org.pkl.core.util.Nullable;
 @NodeChild(value = "leftNode", type = ExpressionNode.class)
 @NodeChild(value = "rightNode", type = ExpressionNode.class)
 // not extending BinaryExpressionNode because we don't want the latter's fallback
-public abstract class EqualNode extends ExpressionNode {
+public abstract class EqualNode extends ExpressionNode implements ComparisonNode {
   protected EqualNode(SourceSection sourceSection) {
     super(sourceSection);
+  }
+
+  @Override
+  public final Operator getOperator() {
+    return Operator.EQUAL;
   }
 
   @Specialization

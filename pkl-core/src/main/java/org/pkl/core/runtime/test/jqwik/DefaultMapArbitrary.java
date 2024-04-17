@@ -1,0 +1,153 @@
+/**
+ * Copyright © 2024 Apple Inc. and the Pkl project authors. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package org.pkl.core.runtime.test.jqwik;
+
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.function.Function;
+
+public class DefaultMapArbitrary<K, V> extends ArbitraryDecorator<Map<K, V>>
+    implements MapArbitrary<K, V> {
+
+  private final Arbitrary<K> keysArbitrary;
+  private final Arbitrary<V> valuesArbitrary;
+
+  private int minSize = 0;
+  private Integer maxSize = null;
+  private RandomDistribution sizeDistribution = null;
+
+  private Set<FeatureExtractor<K>> keyUniquenessExtractors = new LinkedHashSet<>();
+  private Set<FeatureExtractor<V>> valueUniquenessExtractors = new LinkedHashSet<>();
+
+  public DefaultMapArbitrary(Arbitrary<K> keysArbitrary, Arbitrary<V> valuesArbitrary) {
+    this.keysArbitrary = keysArbitrary;
+    this.valuesArbitrary = valuesArbitrary;
+  }
+
+  @Override
+  public MapArbitrary<K, V> ofMinSize(int minSize) {
+    DefaultMapArbitrary<K, V> clone = typedClone();
+    clone.minSize = minSize;
+    return clone;
+  }
+
+  @Override
+  public MapArbitrary<K, V> ofMaxSize(int maxSize) {
+    DefaultMapArbitrary<K, V> clone = typedClone();
+    clone.maxSize = maxSize;
+    return clone;
+  }
+
+  @Override
+  public MapArbitrary<K, V> withSizeDistribution(RandomDistribution distribution) {
+    DefaultMapArbitrary<K, V> clone = typedClone();
+    clone.sizeDistribution = distribution;
+    return clone;
+  }
+
+  @Override
+  protected Arbitrary<Map<K, V>> arbitrary() {
+    // Using list of generated Map.Entry does not work because of potential duplicate keys
+    SetArbitrary<K> keySetArbitrary = createKeySetArbitrary();
+    Arbitrary<List<K>> keySets = keySetArbitrary.map(ArrayList::new);
+    return keySets.flatMap(
+        keys -> {
+          int mapSize = keys.size();
+          ListArbitrary<V> valueListArbitrary = createValueListArbitrary(mapSize);
+          return valueListArbitrary.map(
+              values -> {
+                Map<K, V> map = new LinkedHashMap<>();
+                for (int i = 0; i < mapSize; i++) {
+                  K key = keys.get(i);
+                  V value = values.get(i);
+                  map.put(key, value);
+                }
+                return map;
+              });
+        });
+  }
+
+  private ListArbitrary<V> createValueListArbitrary(int size) {
+    ListArbitrary<V> valueListArbitrary = valuesArbitrary.list().ofSize(size);
+    for (FeatureExtractor<V> extractor : valueUniquenessExtractors) {
+      valueListArbitrary = valueListArbitrary.uniqueElements(extractor);
+    }
+    return valueListArbitrary;
+  }
+
+  private SetArbitrary<K> createKeySetArbitrary() {
+    SetArbitrary<K> keySetArbitrary =
+        keysArbitrary
+            .set()
+            .ofMinSize(minSize)
+            .ofMaxSize(maxSize())
+            .withSizeDistribution(sizeDistribution);
+    for (FeatureExtractor<K> extractor : keyUniquenessExtractors) {
+      keySetArbitrary = keySetArbitrary.uniqueElements(extractor);
+    }
+    return keySetArbitrary;
+  }
+
+  private int maxSize() {
+    return RandomGenerators.collectionMaxSize(minSize, maxSize);
+  }
+
+  @Override
+  public MapArbitrary<K, V> uniqueKeys(Function<K, Object> by) {
+    DefaultMapArbitrary<K, V> clone = typedClone();
+    clone.keyUniquenessExtractors = new LinkedHashSet<>(keyUniquenessExtractors);
+    clone.keyUniquenessExtractors.add(by::apply);
+    return clone;
+  }
+
+  @Override
+  public MapArbitrary<K, V> uniqueValues(Function<V, Object> by) {
+    DefaultMapArbitrary<K, V> clone = typedClone();
+    clone.valueUniquenessExtractors = new LinkedHashSet<>(valueUniquenessExtractors);
+    clone.valueUniquenessExtractors.add(by::apply);
+    return clone;
+  }
+
+  @Override
+  public MapArbitrary<K, V> uniqueValues() {
+    return uniqueValues(FeatureExtractor.identity());
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (o == null || getClass() != o.getClass()) return false;
+
+    DefaultMapArbitrary<?, ?> that = (DefaultMapArbitrary<?, ?>) o;
+    if (minSize != that.minSize) return false;
+    if (!Objects.equals(maxSize, that.maxSize)) return false;
+    if (!keysArbitrary.equals(that.keysArbitrary)) return false;
+    if (!valuesArbitrary.equals(that.valuesArbitrary)) return false;
+    if (!Objects.equals(sizeDistribution, that.sizeDistribution)) return false;
+    if (!keyUniquenessExtractors.equals(that.keyUniquenessExtractors)) return false;
+    return valueUniquenessExtractors.equals(that.valueUniquenessExtractors);
+  }
+
+  @Override
+  public int hashCode() {
+    return HashCodeSupport.hash(minSize, maxSize, keysArbitrary, valuesArbitrary);
+  }
+}

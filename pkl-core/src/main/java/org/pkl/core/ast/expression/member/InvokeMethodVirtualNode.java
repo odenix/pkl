@@ -29,6 +29,7 @@ import com.oracle.truffle.api.nodes.IndirectCallNode;
 import com.oracle.truffle.api.source.SourceSection;
 import org.pkl.core.ast.ExpressionNode;
 import org.pkl.core.ast.MemberLookupMode;
+import org.pkl.core.ast.expression.InvocationNode;
 import org.pkl.core.ast.internal.GetClassNode;
 import org.pkl.core.ast.member.ClassMethod;
 import org.pkl.core.runtime.Identifier;
@@ -39,7 +40,7 @@ import org.pkl.core.runtime.VmFunction;
 @ImportStatic(Identifier.class)
 @NodeChild(value = "receiverNode", type = ExpressionNode.class)
 @NodeChild(value = "receiverClassNode", type = GetClassNode.class, executeWith = "receiverNode")
-public abstract class InvokeMethodVirtualNode extends ExpressionNode {
+public abstract class InvokeMethodVirtualNode extends ExpressionNode implements InvocationNode {
   protected final Identifier methodName;
   @Children private final ExpressionNode[] argumentNodes;
   private final MemberLookupMode lookupMode;
@@ -66,6 +67,24 @@ public abstract class InvokeMethodVirtualNode extends ExpressionNode {
       ExpressionNode[] argumentNodes,
       MemberLookupMode lookupMode) {
     this(sourceSection, methodName, argumentNodes, lookupMode, false);
+  }
+
+  @Override
+  public abstract ExpressionNode getReceiverNode();
+
+  @Override
+  public Identifier getMemberName() {
+    return methodName;
+  }
+
+  @Override
+  public ExpressionNode[] getArgumentNodes() {
+    return argumentNodes;
+  }
+
+  @Override
+  public boolean isPropertyInvocation() {
+    return false;
   }
 
   /**

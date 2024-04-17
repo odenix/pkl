@@ -681,6 +681,10 @@ public abstract class TypeNode extends PklNode {
       }
     }
 
+    public Set<String> getStringLiterals() {
+      return stringLiterals;
+    }
+
     @Override
     public VmTyped getMirror() {
       return MirrorFactories.unionOfStringLiteralsTypeFactory.create(this);
@@ -729,6 +733,10 @@ public abstract class TypeNode extends PklNode {
 
       super(sourceSection);
       this.elementTypeNode = elementTypeNode;
+    }
+
+    public TypeNode getElementTypeNode() {
+      return elementTypeNode;
     }
 
     @Override
@@ -907,6 +915,10 @@ public abstract class TypeNode extends PklNode {
     @Override
     public final VmClass getVmClass() {
       return BaseModule.getMapClass();
+    }
+
+    public TypeNode getKeyTypeNode() {
+      return keyTypeNode;
     }
 
     public TypeNode getValueTypeNode() {
@@ -1296,6 +1308,14 @@ public abstract class TypeNode extends PklNode {
       this.secondTypeNode = secondTypeNode;
     }
 
+    public TypeNode getFirstTypeNode() {
+      return firstTypeNode;
+    }
+
+    public TypeNode getSecondTypeNode() {
+      return secondTypeNode;
+    }
+
     @Override
     public final VmClass getVmClass() {
       return BaseModule.getPairClass();
@@ -1593,6 +1613,10 @@ public abstract class TypeNode extends PklNode {
       aliasedTypeNode = typeAlias.instantiate(typeArgumentNodes);
     }
 
+    public TypeNode getAliasedTypeNode() {
+      return aliasedTypeNode;
+    }
+
     @Override
     public FrameSlotKind getFrameSlotKind() {
       return aliasedTypeNode.getFrameSlotKind();
@@ -1711,6 +1735,14 @@ public abstract class TypeNode extends PklNode {
       super(sourceSection);
       this.childNode = childNode;
       this.constraintNodes = constraintNodes;
+    }
+
+    public TypeNode getChildNode() {
+      return childNode;
+    }
+
+    public TypeConstraintNode[] getConstraintNodes() {
+      return constraintNodes;
     }
 
     @Override
