@@ -5,3 +5,5 @@ abstract class Animal {
 class Dog extends Animal {
   name = "Spot"
 }
+
+x: Dog

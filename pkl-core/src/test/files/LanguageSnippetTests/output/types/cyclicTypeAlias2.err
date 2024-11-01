@@ -13,6 +13,6 @@ x | typealias Foo = List<Bar>
                          ^^^
 at cyclicTypeAlias2#Foo (file:///$snippetsDir/input/types/cyclicTypeAlias2.pkl)
 
-xxx | text = renderer.renderDocument(value)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-at pkl.base#Module.output.text (pkl:base)
+x | x: Foo
+       ^^^
+at cyclicTypeAlias2 (file:///$snippetsDir/input/types/cyclicTypeAlias2.pkl)

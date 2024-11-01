@@ -18,6 +18,7 @@ package org.pkl.core.stdlib.xml;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 import org.pkl.core.runtime.*;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
 import org.pkl.core.stdlib.AbstractRenderer;
 import org.pkl.core.stdlib.ExternalMethod1Node;
 import org.pkl.core.stdlib.PklConverter;
@@ -406,27 +407,24 @@ public final class RendererNodes {
       }
       builder.append("<").append(name);
       if (attributes != null) {
-        attributes.forceAndIterateMemberValues(
-            (key, member, value) -> {
-              builder.append(' ');
-              // this check will be unnecessary once we have an XmlElement Pkl class
-              if (!(key instanceof String string)) {
-                throw new VmExceptionBuilder()
-                    .typeMismatch(name, BaseModule.getStringClass())
-                    .build();
-              }
-              validateName(string, "attribute");
-              builder.append(string).append("=\"");
-              // this check will be unnecessary once we have an XmlElement Pkl class
-              if (!isScalar(value)) {
-                throw new VmExceptionBuilder()
-                    // can only report two expected types for now
-                    .typeMismatch(name, BaseModule.getStringClass(), BaseModule.getBooleanClass())
-                    .build();
-              }
-              builder.append(stringEscaper.escape(value.toString())).append("\"");
-              return true;
-            });
+        for (var cursor = attributes.entries(); cursor.advance(); ) {
+          builder.append(' ');
+          // this check will be unnecessary once we have an XmlElement Pkl class
+          if (!(cursor.key() instanceof String string)) {
+            throw new VmExceptionBuilder().typeMismatch(name, BaseModule.getStringClass()).build();
+          }
+          validateName(string, "attribute");
+          builder.append(string).append("=\"");
+          var value = cursor.value();
+          // this check will be unnecessary once we have an XmlElement Pkl class
+          if (!isScalar(value)) {
+            throw new VmExceptionBuilder()
+                // can only report two expected types for now
+                .typeMismatch(name, BaseModule.getStringClass(), BaseModule.getBooleanClass())
+                .build();
+          }
+          builder.append(stringEscaper.escape(value.toString())).append("\"");
+        }
       }
       builder.append(">");
 
@@ -436,12 +434,10 @@ public final class RendererNodes {
       if (isXmlElement(content)) {
         // this special casing is necessary because renderXmlElement() is implemented in terms of
         // this method
-        ((VmDynamic) content)
-            .forceAndIterateMemberValues(
-                (key, member, value) -> {
-                  if (member.isElement()) doVisitElement(value);
-                  return true;
-                });
+        for (var cursor = ((VmDynamic) content).elements(CursorOption.ALL_VALUES);
+            cursor.advance(); ) {
+          doVisitElement(cursor.value());
+        }
       } else {
         visit(content);
       }

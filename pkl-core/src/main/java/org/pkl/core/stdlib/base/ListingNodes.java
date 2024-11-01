@@ -16,12 +16,12 @@
 package org.pkl.core.stdlib.base;
 
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.LoopNode;
 import org.pkl.core.ast.PklNode;
 import org.pkl.core.ast.lambda.*;
 import org.pkl.core.runtime.*;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
 import org.pkl.core.stdlib.ExternalMethod0Node;
 import org.pkl.core.stdlib.ExternalMethod1Node;
 import org.pkl.core.stdlib.ExternalMethod2Node;
@@ -64,10 +64,12 @@ public final class ListingNodes {
 
   public abstract static class isDistinct extends ExternalPropertyNode {
     @Specialization
-    @TruffleBoundary
     protected boolean eval(VmListing self) {
-      var visitedValues = CollectionUtils.newHashSet();
-      return self.forceAndIterateMemberValues((key, member, value) -> visitedValues.add(value));
+      var seenValues = CollectionUtils.newHashSet();
+      for (var cursor = self.elements(CursorOption.ANY_ORDER); cursor.advance(); ) {
+        if (!cursor.addValueTo(seenValues)) return false;
+      }
+      return true;
     }
   }
 
@@ -76,26 +78,26 @@ public final class ListingNodes {
 
     @Specialization
     protected boolean eval(VmListing self, VmFunction selector) {
-      var visitedValues = CollectionUtils.newHashSet();
-      return self.forceAndIterateMemberValues(
-          (key, member, value) -> visitedValues.add(applyNode.execute(selector, value)));
+      var seenValues = CollectionUtils.newHashSet();
+      for (var cursor = self.elements(CursorOption.ANY_ORDER); cursor.advance(); ) {
+        var value = applyNode.execute(selector, cursor.value());
+        if (!cursor.addValueTo(seenValues, value)) return false;
+      }
+      return true;
     }
   }
 
   public abstract static class distinct extends ExternalPropertyNode {
     @Specialization
     protected VmListing eval(VmListing self) {
-      var visitedValues = CollectionUtils.newHashSet();
+      var seenValues = CollectionUtils.newHashSet();
       var builder = new VmObjectBuilder();
-
-      self.forceAndIterateMemberValues(
-          (key, member, value) -> {
-            if (visitedValues.add(value)) {
-              builder.addElement(value);
-            }
-            return true;
-          });
-
+      for (var cursor = self.elements(CursorOption.ALL_VALUES); cursor.advance(); ) {
+        var value = cursor.value();
+        if (cursor.addValueTo(seenValues)) {
+          builder.addElement(value);
+        }
+      }
       return builder.toListing();
     }
   }
@@ -157,17 +159,15 @@ public final class ListingNodes {
 
     @Specialization
     protected VmListing eval(VmListing self, VmFunction selector) {
-      var visitedValues = CollectionUtils.newHashSet();
+      var seenValues = CollectionUtils.newHashSet();
       var builder = new VmObjectBuilder();
-
-      self.forceAndIterateMemberValues(
-          (key, member, value) -> {
-            if (visitedValues.add(applyNode.execute(selector, value))) {
-              builder.addElement(value);
-            }
-            return true;
-          });
-
+      for (var cursor = self.elements(CursorOption.ALL_VALUES); cursor.advance(); ) {
+        var value = cursor.value();
+        var selectorValue = applyNode.execute(selector, value);
+        if (cursor.addValueTo(seenValues, selectorValue)) {
+          builder.addElement(value);
+        }
+      }
       return builder.toListing();
     }
   }
@@ -177,16 +177,10 @@ public final class ListingNodes {
 
     @Specialization
     protected boolean eval(VmListing self, VmFunction predicate) {
-      var result = new MutableBoolean(true);
-      self.iterateMemberValues(
-          (key, member, value) -> {
-            if (value == null) {
-              value = VmUtils.readMember(self, key);
-            }
-            result.set(applyNode.executeBoolean(predicate, value));
-            return result.get();
-          });
-      return result.get();
+      for (var cursor = self.elements(CursorOption.ANY_ORDER); cursor.advance(); ) {
+        if (!applyNode.executeBoolean(predicate, cursor.value())) return false;
+      }
+      return true;
     }
   }
 
@@ -195,33 +189,20 @@ public final class ListingNodes {
 
     @Specialization
     protected boolean eval(VmListing self, VmFunction predicate) {
-      var result = new MutableBoolean(false);
-      self.iterateMemberValues(
-          (key, member, value) -> {
-            if (value == null) {
-              value = VmUtils.readMember(self, key);
-            }
-            result.set(applyNode.executeBoolean(predicate, value));
-            return !result.get();
-          });
-      return result.get();
+      for (var cursor = self.elements(CursorOption.ANY_ORDER); cursor.advance(); ) {
+        if (applyNode.executeBoolean(predicate, cursor.value())) return true;
+      }
+      return false;
     }
   }
 
   public abstract static class contains extends ExternalMethod1Node {
     @Specialization
     protected boolean eval(VmListing self, Object element) {
-      var result = new MutableBoolean(false);
-      self.iterateMemberValues(
-          (key, member, value) -> {
-            if (value == null) {
-              value = VmUtils.readMember(self, key);
-            }
-            result.set(element.equals(value));
-            return !result.get();
-          });
-      LoopNode.reportLoopCount(this, self.getLength());
-      return result.get();
+      for (var cursor = self.elements(CursorOption.ANY_ORDER); cursor.advance(); ) {
+        if (cursor.valueEquals(element)) return true;
+      }
+      return false;
     }
   }
 
@@ -230,14 +211,12 @@ public final class ListingNodes {
 
     @Specialization
     protected Object eval(VmListing self, Object initial, VmFunction function) {
-      var result = new MutableReference<>(initial);
-      self.forceAndIterateMemberValues(
-          (key, member, value) -> {
-            result.set(applyLambdaNode.execute(function, result.get(), value));
-            return true;
-          });
+      var result = initial;
+      for (var cursor = self.elements(CursorOption.ALL_VALUES); cursor.advance(); ) {
+        result = applyLambdaNode.execute(function, result, cursor.value());
+      }
       LoopNode.reportLoopCount(this, self.getLength());
-      return result.get();
+      return result;
     }
   }
 
@@ -246,16 +225,12 @@ public final class ListingNodes {
 
     @Specialization
     protected Object eval(VmListing self, Object initial, VmFunction function) {
-      var index = new MutableLong(0);
-      var result = new MutableReference<>(initial);
-      self.forceAndIterateMemberValues(
-          (key, member, value) -> {
-            result.set(
-                applyLambdaNode.execute(function, index.getAndIncrement(), result.get(), value));
-            return true;
-          });
+      var result = initial;
+      for (var cursor = self.elements(CursorOption.ALL_VALUES); cursor.advance(); ) {
+        result = applyLambdaNode.execute(function, cursor.key(), result, cursor.value());
+      }
       LoopNode.reportLoopCount(this, self.getLength());
-      return result.get();
+      return result;
     }
   }
 
@@ -264,15 +239,14 @@ public final class ListingNodes {
     protected Object eval(VmListing self, String separator) {
       if (self.isEmpty()) return "";
 
+      var cursor = self.elements(CursorOption.ALL_VALUES);
+      cursor.advance();
       var builder = new StringBuilder();
-      self.forceAndIterateMemberValues(
-          (key, member, value) -> {
-            if (!key.equals(0L)) {
-              builder.append(separator);
-            }
-            builder.append(value);
-            return true;
-          });
+      cursor.appendValueTo(builder);
+      while (cursor.advance()) {
+        cursor.appendValueTo(builder, separator);
+        cursor.appendValueTo(builder);
+      }
       LoopNode.reportLoopCount(this, self.getLength());
       return builder.toString();
     }
@@ -282,11 +256,9 @@ public final class ListingNodes {
     @Specialization
     protected VmList eval(VmListing self) {
       var builder = VmList.EMPTY.builder();
-      self.forceAndIterateMemberValues(
-          (key, member, value) -> {
-            builder.add(value);
-            return true;
-          });
+      for (var cursor = self.elements(CursorOption.ALL_VALUES); cursor.advance(); ) {
+        builder.add(cursor.value());
+      }
       return builder.build();
     }
   }
@@ -295,11 +267,9 @@ public final class ListingNodes {
     @Specialization
     protected VmSet eval(VmListing self) {
       var builder = VmSet.EMPTY.builder();
-      self.forceAndIterateMemberValues(
-          (key, member, value) -> {
-            builder.add(value);
-            return true;
-          });
+      for (var cursor = self.elements(CursorOption.ALL_VALUES); cursor.advance(); ) {
+        builder.add(cursor.value());
+      }
       return builder.build();
     }
   }

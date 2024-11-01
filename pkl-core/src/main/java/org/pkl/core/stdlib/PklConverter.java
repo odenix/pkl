@@ -17,6 +17,7 @@ package org.pkl.core.stdlib;
 
 import java.util.*;
 import org.pkl.core.runtime.*;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
 import org.pkl.core.util.Nullable;
 import org.pkl.core.util.Pair;
 
@@ -172,14 +173,11 @@ public final class PklConverter implements VmValueConverter<Object> {
 
   private Map<VmClass, VmFunction> createTypeConverters(VmMapping converters) {
     var result = new HashMap<VmClass, VmFunction>();
-    converters.iterateMemberValues(
-        (key, member, value) -> {
-          assert value != null; // forced in ctor
-          if (key instanceof VmClass vmClass) {
-            result.put(vmClass, (VmFunction) value);
-          }
-          return true;
-        });
+    for (var cursor = converters.entries(CursorOption.ANY_ORDER); cursor.advance(); ) {
+      if (cursor.key() instanceof VmClass vmClass) {
+        result.put(vmClass, (VmFunction) cursor.value());
+      }
+    }
     return result;
   }
 
@@ -187,14 +185,11 @@ public final class PklConverter implements VmValueConverter<Object> {
   private Pair<Object[], VmFunction>[] createPathConverters(VmMapping converters) {
     var result = new ArrayList<Pair<Object[], VmFunction>>();
     var parser = new PathSpecParser();
-    converters.iterateMemberValues(
-        (key, member, value) -> {
-          assert value != null; // forced in ctor
-          if (key instanceof String string) {
-            result.add(Pair.of(parser.parse(string), (VmFunction) value));
-          }
-          return true;
-        });
+    for (var cursor = converters.entries(); cursor.advance(); ) {
+      if (cursor.key() instanceof String string) {
+        result.add(Pair.of(parser.parse(string), (VmFunction) cursor.value()));
+      }
+    }
     return result.toArray(new Pair[0]);
   }
 

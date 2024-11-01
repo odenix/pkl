@@ -1,2 +1,2 @@
-listing = (it) -> it
+local listing = (it) -> it
 call = listing(10)

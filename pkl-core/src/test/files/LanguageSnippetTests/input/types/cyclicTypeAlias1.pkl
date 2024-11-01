@@ -1,1 +1,3 @@
 typealias Foo = List<Foo>
+
+x: Foo

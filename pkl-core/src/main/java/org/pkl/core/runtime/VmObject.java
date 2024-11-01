@@ -29,12 +29,15 @@ import org.pkl.core.util.Nullable;
 
 /** Corresponds to `pkl.base#Object`. */
 public abstract class VmObject extends VmObjectLike {
+  private static final byte SHALLOW_FORCE_FLAG = 0x1;
+  private static final byte DEEP_FORCE_FLAG = 0x2;
+
   @CompilationFinal protected @Nullable VmObject parent;
   protected final UnmodifiableEconomicMap<Object, ObjectMember> members;
   protected final EconomicMap<Object, Object> cachedValues;
 
   protected int cachedHash;
-  private boolean forced;
+  private byte flags;
 
   public VmObject(
       MaterializedFrame enclosingFrame,
@@ -98,43 +101,6 @@ public abstract class VmObject extends VmObjectLike {
 
   @Override
   @TruffleBoundary
-  public final boolean iterateMemberValues(MemberValueConsumer consumer) {
-    var visited = new HashSet<>();
-    return iterateMembers(
-        (key, member) -> {
-          var alreadyVisited = !visited.add(key);
-          // important to record hidden member as visited before skipping it
-          // because any overriding member won't carry a `hidden` identifier
-          if (alreadyVisited || member.isLocalOrExternalOrHidden()) return true;
-          return consumer.accept(key, member, getCachedValue(key));
-        });
-  }
-
-  @Override
-  @TruffleBoundary
-  public final boolean forceAndIterateMemberValues(ForcedMemberValueConsumer consumer) {
-    force(false, false);
-    return iterateAlreadyForcedMemberValues(consumer);
-  }
-
-  @Override
-  @TruffleBoundary
-  public final boolean iterateAlreadyForcedMemberValues(ForcedMemberValueConsumer consumer) {
-    var visited = new HashSet<>();
-    return iterateMembers(
-        (key, member) -> {
-          var alreadyVisited = !visited.add(key);
-          // important to record hidden member as visited before skipping it
-          // because any overriding member won't carry a `hidden` identifier
-          if (alreadyVisited || member.isLocalOrExternalOrHidden()) return true;
-          Object cachedValue = getCachedValue(key);
-          assert cachedValue != null; // forced
-          return consumer.accept(key, member, cachedValue);
-        });
-  }
-
-  @Override
-  @TruffleBoundary
   public final boolean iterateMembers(BiFunction<Object, ObjectMember, Boolean> consumer) {
     var parent = getParent();
     if (parent != null) {
@@ -150,13 +116,26 @@ public abstract class VmObject extends VmObjectLike {
     return true;
   }
 
+  protected boolean isShallowForced() {
+    return (flags & SHALLOW_FORCE_FLAG) != 0;
+  }
+
+  private boolean isDeepForced() {
+    return (flags & DEEP_FORCE_FLAG) != 0;
+  }
+
   /** Evaluates this object's members. Skips local, hidden, and external members. */
   @Override
   @TruffleBoundary
   public final void force(boolean allowUndefinedValues, boolean recurse) {
-    if (forced) return;
-
-    if (recurse) forced = true;
+    var oldFlags = flags;
+    if (recurse) {
+      if (isDeepForced()) return;
+      flags |= (DEEP_FORCE_FLAG | SHALLOW_FORCE_FLAG);
+    } else {
+      if (isShallowForced()) return;
+      flags |= SHALLOW_FORCE_FLAG;
+    }
 
     try {
       for (VmObjectLike owner = this; owner != null; owner = owner.getParent()) {
@@ -187,7 +166,7 @@ public abstract class VmObject extends VmObjectLike {
         }
       }
     } catch (Throwable t) {
-      forced = false;
+      flags = oldFlags;
       throw t;
     }
   }
@@ -203,21 +182,17 @@ public abstract class VmObject extends VmObjectLike {
   }
 
   /**
-   * Exports this object's members. Skips local members, hidden members, class definitions, and type
-   * aliases. Members that haven't been forced have a `null` value.
+   * Exports this object's members. Skips local members, hidden members, and type declarations.
+   * Members that haven't been forced have a `null` value.
    */
   @TruffleBoundary
   protected final Map<String, Object> exportMembers() {
     var result = CollectionUtils.<String, Object>newLinkedHashMap(EconomicMaps.size(cachedValues));
-
-    iterateMemberValues(
-        (key, member, value) -> {
-          if (member.isClass() || member.isTypeAlias()) return true;
-
-          result.put(key.toString(), VmValue.exportNullable(value));
-          return true;
-        });
-
+    for (var cursor = members(); cursor.advance(); ) {
+      var member = cursor.member();
+      if (member.isType()) continue;
+      result.put(cursor.key().toString(), VmValue.exportNullable(cursor.value()));
+    }
     return result;
   }
 }

@@ -25,6 +25,9 @@ import org.pkl.core.PModule;
 import org.pkl.core.PObject;
 import org.pkl.core.ast.expression.unary.ImportNode;
 import org.pkl.core.ast.member.ObjectMember;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
+import org.pkl.core.runtime.VmObjectCursor.EmptyCursor;
+import org.pkl.core.runtime.VmTypedCursors.PropertyCursor;
 import org.pkl.core.util.EconomicMaps;
 import org.pkl.core.util.LateInit;
 import org.pkl.core.util.Nullable;
@@ -171,6 +174,63 @@ public final class VmTyped extends VmObject {
   @Override
   public <T> T accept(VmValueConverter<T> converter, Iterable<Object> path) {
     return converter.convertTyped(this, path);
+  }
+
+  @Override
+  public VmObjectCursor properties() {
+    return new PropertyCursor(this, true);
+  }
+
+  @Override
+  public VmObjectCursor properties(CursorOption option) {
+    // don't force module objects to avoid forcing types (too conservative?)
+    if (option == CursorOption.ALL_VALUES && !isModuleObject()) {
+      force(false, false);
+    }
+    return new PropertyCursor(this, true);
+  }
+
+  @Override
+  public VmObjectCursor elements() {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor elements(CursorOption option) {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor elements(CursorOption option1, CursorOption option2) {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor entries() {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor entries(CursorOption option) {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor entries(CursorOption option1, CursorOption option2) {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor members() {
+    return new PropertyCursor(this, false);
+  }
+
+  @Override
+  public VmObjectCursor members(CursorOption option) {
+    if (option == CursorOption.ANY_ORDER) {
+      force(false, false);
+    }
+    return new PropertyCursor(this, false);
   }
 
   @Override

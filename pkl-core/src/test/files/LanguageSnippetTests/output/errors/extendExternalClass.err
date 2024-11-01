@@ -7,6 +7,6 @@ at extendExternalClass#Person (file:///$snippetsDir/input/errors/extendExternalC
 
 External classes can only be extended by standard library classes.
 
-xxx | text = renderer.renderDocument(value)
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-at pkl.base#Module.output.text (pkl:base)
+x | x: Person
+       ^^^^^^
+at extendExternalClass (file:///$snippetsDir/input/errors/extendExternalClass.pkl)

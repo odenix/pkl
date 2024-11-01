@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import org.pkl.core.ValueFormatter;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
 import org.pkl.core.util.Nullable;
 import org.pkl.core.util.StringSimilarity;
 
@@ -49,15 +50,13 @@ public final class KeyLookupSuggestions {
   public static List<Candidate> forObject(VmObjectLike object, String key) {
     var candidates = new ArrayList<Candidate>();
 
-    object.iterateMemberValues(
-        (memberKey, member, value) -> {
-          if (!(memberKey instanceof String stringKey)) return true;
-          var similarity = STRING_SIMILARITY.similarity(stringKey, key);
-          if (similarity >= SIMILARITY_THRESHOLD) {
-            candidates.add(new Candidate(stringKey, similarity));
-          }
-          return true;
-        });
+    for (var cursor = object.entries(CursorOption.ANY_ORDER); cursor.advance(); ) {
+      if (!(cursor.key() instanceof String stringKey)) continue;
+      var similarity = STRING_SIMILARITY.similarity(stringKey, key);
+      if (similarity >= SIMILARITY_THRESHOLD) {
+        candidates.add(new Candidate(stringKey, similarity));
+      }
+    }
 
     candidates.sort(Comparator.naturalOrder());
     return candidates;

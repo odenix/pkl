@@ -42,7 +42,6 @@ import org.pkl.core.runtime.VmObject;
 import org.pkl.core.runtime.VmTyped;
 import org.pkl.core.runtime.VmUtils;
 import org.pkl.core.util.EconomicMaps;
-import org.pkl.core.util.MutableLong;
 
 @ImportStatic(BaseModule.class)
 public abstract class GeneratorSpreadNode extends GeneratorMemberNode {
@@ -175,59 +174,62 @@ public abstract class GeneratorSpreadNode extends GeneratorMemberNode {
   }
 
   protected void doEvalDynamic(ObjectData data, VmObject iterable) {
-    var length = new MutableLong(data.length);
-    iterable.forceAndIterateMemberValues(
-        (key, member, value) -> {
-          if (member.isElement()) {
-            EconomicMaps.put(data.members, length.getAndIncrement(), createMember(member, value));
-          } else {
-            if (EconomicMaps.put(data.members, key, createMember(member, value)) != null) {
-              duplicateMember(key, member);
-            }
-          }
-          return true;
-        });
-    data.length = (int) length.get();
+    var length = data.length;
+
+    // TODO: skip types for module objects?
+    for (var cursor = iterable.members(); cursor.advance(); ) {
+      var key = cursor.key();
+      var value = cursor.value();
+      var member = cursor.member();
+      if (cursor.isElement()) {
+        EconomicMaps.put(data.members, (long) length++, createMember(member, value));
+      } else {
+        if (EconomicMaps.put(data.members, key, createMember(member, value)) != null) {
+          duplicateMember(key, member);
+        }
+      }
+    }
+    data.length = length;
   }
 
   private void doEvalMapping(ObjectData data, VmObject iterable) {
-    iterable.forceAndIterateMemberValues(
-        (key, member, value) -> {
-          if (member.isElement() || member.isProp()) {
-            cannotHaveMember(BaseModule.getMappingClass(), member);
-          }
-          if (EconomicMaps.put(data.members, key, createMember(member, value)) != null) {
-            duplicateMember(key, member);
-          }
-          return true;
-        });
+    for (var cursor = iterable.members(); cursor.advance(); ) {
+      var member = cursor.member();
+      if (cursor.isElement() || cursor.isProperty()) {
+        cannotHaveMember(BaseModule.getMappingClass(), member);
+      }
+      var key = cursor.key();
+      if (EconomicMaps.put(data.members, key, createMember(member, cursor.value())) != null) {
+        duplicateMember(key, member);
+      }
+    }
   }
 
   private void doEvalListing(ObjectData data, VmObject iterable) {
-    var length = new MutableLong(data.length);
-    iterable.forceAndIterateMemberValues(
-        (key, member, value) -> {
-          if (member.isEntry() || member.isProp()) {
-            cannotHaveMember(getListingClass(), member);
-          }
-          EconomicMaps.put(data.members, length.getAndIncrement(), createMember(member, value));
-          return true;
-        });
-    data.length = (int) length.get();
+    var length = data.length;
+    for (var cursor = iterable.members(); cursor.advance(); ) {
+      var member = cursor.member();
+      if (cursor.isEntry() || cursor.isProperty()) {
+        cannotHaveMember(getListingClass(), member);
+      }
+      EconomicMaps.put(data.members, (long) length++, createMember(member, cursor.value()));
+    }
+    data.length = length;
   }
 
   private void doEvalTyped(VmClass clazz, ObjectData data, VmObject iterable) {
-    iterable.forceAndIterateMemberValues(
-        (key, member, value) -> {
-          if (member.isElement() || member.isEntry()) {
-            cannotHaveMember(clazz, member);
-          }
-          checkTypedProperty(clazz, member);
-          if (EconomicMaps.put(data.members, key, createMember(member, value)) != null) {
-            duplicateMember(key, member);
-          }
-          return true;
-        });
+    // TODO: visit members that are types?
+    for (var cursor = iterable.members(); cursor.advance(); ) {
+      var member = cursor.member();
+      if (cursor.isElement() || cursor.isEntry()) {
+        cannotHaveMember(clazz, member);
+      }
+      checkTypedProperty(clazz, member);
+      var key = cursor.key();
+      if (EconomicMaps.put(data.members, key, createMember(member, cursor.value())) != null) {
+        duplicateMember(key, member);
+      }
+    }
   }
 
   // handles both `List` and `Set`

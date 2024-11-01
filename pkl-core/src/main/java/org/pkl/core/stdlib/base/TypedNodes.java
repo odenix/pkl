@@ -18,6 +18,7 @@ package org.pkl.core.stdlib.base;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import org.pkl.core.runtime.*;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
 import org.pkl.core.stdlib.ExternalMethod0Node;
 import org.pkl.core.stdlib.ExternalMethod1Node;
 
@@ -53,13 +54,9 @@ public final class TypedNodes {
     @Specialization
     protected VmMap eval(VmTyped self) {
       var builder = VmMap.builder();
-      self.forceAndIterateMemberValues(
-          (memberKey, memberDef, memberValue) -> {
-            // exclude type definitions
-            if (memberDef.isClass() || memberDef.isTypeAlias()) return true;
-            builder.add(memberKey.toString(), memberValue);
-            return true;
-          });
+      for (var cursor = self.properties(CursorOption.ALL_VALUES); cursor.advance(); ) {
+        builder.add(cursor.key().toString(), cursor.value());
+      }
       return builder.build();
     }
   }

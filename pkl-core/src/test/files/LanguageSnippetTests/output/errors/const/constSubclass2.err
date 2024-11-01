@@ -7,6 +7,10 @@ at constSubclass2#Bar (file:///$snippetsDir/input/errors/const/constSubclass2.pk
 
 Property `x` cannot be declared const, because it overrides a non-const property on parent class `constSubclass2#Foo`.
 
+x | bar = new Bar {}
+              ^^^
+at constSubclass2#bar (file:///$snippetsDir/input/errors/const/constSubclass2.pkl)
+
 xxx | text = renderer.renderDocument(value)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 at pkl.base#Module.output.text (pkl:base)

@@ -171,12 +171,9 @@ public class EvaluatorImpl implements Evaluator {
           }
           var files = (VmMapping) filesOrNull;
           var result = new LinkedHashMap<String, FileOutput>();
-          files.forceAndIterateMemberValues(
-              (key, member, value) -> {
-                assert member.isEntry();
-                result.put((String) key, new FileOutputImpl(this, (VmTyped) value));
-                return true;
-              });
+          for (var cursor = files.entries(); cursor.advance(); ) {
+            result.put((String) cursor.key(), new FileOutputImpl(this, (VmTyped) cursor.value()));
+          }
           return result;
         });
   }

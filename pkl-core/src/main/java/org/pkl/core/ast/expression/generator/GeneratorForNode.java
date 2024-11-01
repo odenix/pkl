@@ -16,13 +16,11 @@
 package org.pkl.core.ast.expression.generator;
 
 import com.oracle.truffle.api.CompilerDirectives;
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Fallback;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.frame.VirtualFrame;
 import com.oracle.truffle.api.nodes.ExplodeLoop;
 import com.oracle.truffle.api.source.SourceSection;
-import java.util.*;
 import org.pkl.core.ast.ExpressionNode;
 import org.pkl.core.ast.type.TypeNode;
 import org.pkl.core.ast.type.UnresolvedTypeNode;
@@ -30,7 +28,6 @@ import org.pkl.core.ast.type.VmTypeMismatchException;
 import org.pkl.core.runtime.*;
 import org.pkl.core.util.LateInit;
 import org.pkl.core.util.Nullable;
-import org.pkl.core.util.Pair;
 
 public abstract class GeneratorForNode extends GeneratorMemberNode {
   private final int keySlot;
@@ -147,13 +144,12 @@ public abstract class GeneratorForNode extends GeneratorMemberNode {
         .build();
   }
 
-  @SuppressWarnings("ForLoopReplaceableByForEach")
   private void doEvalObject(VirtualFrame frame, VmObject iterable, Object parent, ObjectData data) {
     initTypeNodes(frame);
-    var members = evaluateMembers(iterable);
-    for (int i = 0; i < members.size(); i++) {
-      var member = members.get(i);
-      executeIteration(frame, parent, data, member.first, member.second);
+    // TODO: skip types for module objects?
+    for (var cursor = iterable.members(); cursor.advance(); ) {
+      var key = cursor.isProperty() ? cursor.key().toString() : cursor.key();
+      executeIteration(frame, parent, data, key, cursor.value());
     }
     resetFrameSlots(frame);
   }
@@ -179,21 +175,6 @@ public abstract class GeneratorForNode extends GeneratorMemberNode {
       valueTypeNode = insert(unresolvedValueTypeNode.execute(frame)).initWriteSlotNode(valueSlot);
       unresolvedValueTypeNode = null;
     }
-  }
-
-  /**
-   * Evaluate members upfront to make sure that `childNode.execute()` is not behind a Truffle
-   * boundary.
-   */
-  @TruffleBoundary
-  private List<Pair<Object, Object>> evaluateMembers(VmObject object) {
-    var members = new ArrayList<Pair<Object, Object>>();
-    object.forceAndIterateMemberValues(
-        (key, member, value) -> {
-          members.add(Pair.of(member.isProp() ? key.toString() : key, value));
-          return true;
-        });
-    return members;
   }
 
   @ExplodeLoop

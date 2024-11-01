@@ -42,7 +42,7 @@ public abstract class VmListingOrMapping<SELF extends VmListingOrMapping<SELF>> 
   private final EconomicMap<Object, ObjectMember> cachedMembers = EconomicMaps.create();
   private final EconomicSet<Object> checkedMembers = EconomicSets.create();
 
-  public VmListingOrMapping(
+  protected VmListingOrMapping(
       MaterializedFrame enclosingFrame,
       @Nullable VmObject parent,
       UnmodifiableEconomicMap<Object, ObjectMember> members,
@@ -55,7 +55,7 @@ public abstract class VmListingOrMapping<SELF extends VmListingOrMapping<SELF>> 
     this.typeNodeFrame = typeNodeFrame;
   }
 
-  ObjectMember findMember(Object key) {
+  final ObjectMember findMember(Object key) {
     var member = EconomicMaps.get(cachedMembers, key);
     if (member != null) {
       return member;
@@ -68,18 +68,18 @@ public abstract class VmListingOrMapping<SELF extends VmListingOrMapping<SELF>> 
     throw PklBugException.unreachableCode();
   }
 
-  public @Nullable ListingOrMappingTypeCastNode getTypeCastNode() {
+  public final @Nullable ListingOrMappingTypeCastNode getTypeCastNode() {
     return typeCastNode;
   }
 
   @Override
-  public void setCachedValue(Object key, Object value, ObjectMember objectMember) {
+  public final void setCachedValue(Object key, Object value, ObjectMember objectMember) {
     super.setCachedValue(key, value, objectMember);
     EconomicMaps.put(cachedMembers, key, objectMember);
   }
 
   @Override
-  public @Nullable Object getCachedValue(Object key) {
+  public final @Nullable Object getCachedValue(Object key) {
     var myCachedValue = super.getCachedValue(key);
     if (myCachedValue != null || delegate == null) {
       return myCachedValue;
@@ -107,7 +107,7 @@ public abstract class VmListingOrMapping<SELF extends VmListingOrMapping<SELF>> 
   }
 
   @Override
-  public Object getExtraStorage() {
+  public final Object getExtraStorage() {
     if (delegate != null) {
       return delegate.getExtraStorage();
     }
@@ -116,7 +116,7 @@ public abstract class VmListingOrMapping<SELF extends VmListingOrMapping<SELF>> 
   }
 
   /** Perform a typecast on this member, */
-  public Object typecastObjectMember(
+  public final Object typecastObjectMember(
       ObjectMember member, Object memberValue, IndirectCallNode callNode) {
     if (!(member.isEntry() || member.isElement()) || typeCastNode == null) {
       return memberValue;
@@ -151,7 +151,7 @@ public abstract class VmListingOrMapping<SELF extends VmListingOrMapping<SELF>> 
       ListingOrMappingTypeCastNode typeCastNode, MaterializedFrame typeNodeFrame);
 
   /** Tells if this mapping/listing runs the same typechecks as {@code typeNode}. */
-  public boolean hasSameChecksAs(TypeNode typeNode) {
+  public final boolean hasSameChecksAs(TypeNode typeNode) {
     if (typeCastNode == null) {
       return false;
     }

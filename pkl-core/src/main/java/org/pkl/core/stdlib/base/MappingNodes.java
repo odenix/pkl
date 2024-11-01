@@ -15,57 +15,33 @@
  */
 package org.pkl.core.stdlib.base;
 
-import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
-import java.util.HashSet;
 import org.pkl.core.ast.lambda.ApplyVmFunction2Node;
 import org.pkl.core.ast.lambda.ApplyVmFunction2NodeGen;
 import org.pkl.core.ast.lambda.ApplyVmFunction3Node;
 import org.pkl.core.ast.lambda.ApplyVmFunction3NodeGen;
 import org.pkl.core.runtime.*;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
 import org.pkl.core.stdlib.ExternalMethod0Node;
 import org.pkl.core.stdlib.ExternalMethod1Node;
 import org.pkl.core.stdlib.ExternalMethod2Node;
 import org.pkl.core.stdlib.ExternalPropertyNode;
-import org.pkl.core.util.EconomicMaps;
-import org.pkl.core.util.MutableBoolean;
-import org.pkl.core.util.MutableLong;
-import org.pkl.core.util.MutableReference;
 
 public final class MappingNodes {
   private MappingNodes() {}
 
   public abstract static class isEmpty extends ExternalPropertyNode {
     @Specialization
-    @TruffleBoundary
     protected boolean eval(VmMapping self) {
-      for (VmObjectLike curr = self; curr != null; curr = curr.getParent()) {
-        var cursor = EconomicMaps.getEntries(curr.getMembers());
-        while (cursor.advance()) {
-          if (!(cursor.getKey() instanceof Identifier)) return false;
-        }
-      }
-      return true;
+      return !self.entries(CursorOption.ANY_ORDER, CursorOption.LAZY_REQUIRED).advance();
     }
   }
 
   public abstract static class length extends ExternalPropertyNode {
     @Specialization
-    @TruffleBoundary
     protected long eval(VmMapping self) {
-      var count = new MutableLong(0);
-      var visited = new HashSet<>();
-      self.iterateMembers(
-          (key, member) -> {
-            var alreadyVisited = !visited.add(key);
-            // important to record hidden member as visited before skipping it
-            // because any overriding member won't carry a `hidden` identifier
-            if (alreadyVisited || member.isLocalOrExternalOrHidden()) return true;
-            count.getAndIncrement();
-            return true;
-          });
-      return count.get();
+      return self.getAllKeys().getLength();
     }
   }
 
@@ -81,7 +57,7 @@ public final class MappingNodes {
     protected boolean eval(VmMapping self, Object key) {
       if (self.hasCachedValue(key)) return true;
 
-      for (VmObjectLike curr = self; curr != null; curr = curr.getParent()) {
+      for (VmObject curr = self; curr != null; curr = curr.getParent()) {
         if (curr.hasMember(key)) return true;
       }
 
@@ -92,16 +68,10 @@ public final class MappingNodes {
   public abstract static class containsValue extends ExternalMethod1Node {
     @Specialization
     protected boolean eval(VmMapping self, Object value) {
-      var foundValue = new MutableBoolean(false);
-      self.iterateMemberValues(
-          (key, member, memberValue) -> {
-            if (memberValue == null) {
-              memberValue = VmUtils.readMember(self, key);
-            }
-            foundValue.set(value.equals(memberValue));
-            return !foundValue.get();
-          });
-      return foundValue.get();
+      for (var cursor = self.entries(CursorOption.ANY_ORDER); cursor.advance(); ) {
+        if (cursor.valueEquals(value)) return true;
+      }
+      return false;
     }
   }
 
@@ -119,13 +89,11 @@ public final class MappingNodes {
 
     @Specialization
     protected Object eval(VmMapping self, Object initial, VmFunction function) {
-      var result = new MutableReference<>(initial);
-      self.forceAndIterateMemberValues(
-          (key, def, value) -> {
-            result.set(applyLambdaNode.execute(function, result.get(), key, value));
-            return true;
-          });
-      return result.get();
+      var result = initial;
+      for (var cursor = self.entries(); cursor.advance(); ) {
+        result = applyLambdaNode.execute(function, result, cursor.key(), cursor.value());
+      }
+      return result;
     }
   }
 
@@ -134,16 +102,10 @@ public final class MappingNodes {
 
     @Specialization
     protected boolean eval(VmMapping self, VmFunction function) {
-      var result = new MutableBoolean(true);
-      self.iterateMemberValues(
-          (key, member, value) -> {
-            if (value == null) {
-              value = VmUtils.readMember(self, key);
-            }
-            result.set(applyLambdaNode.executeBoolean(function, key, value));
-            return result.get();
-          });
-      return result.get();
+      for (var cursor = self.entries(CursorOption.ANY_ORDER); cursor.advance(); ) {
+        if (!applyLambdaNode.executeBoolean(function, cursor.key(), cursor.value())) return false;
+      }
+      return true;
     }
   }
 
@@ -152,16 +114,10 @@ public final class MappingNodes {
 
     @Specialization
     protected boolean eval(VmMapping self, VmFunction function) {
-      var result = new MutableBoolean(false);
-      self.iterateMemberValues(
-          (key, member, value) -> {
-            if (value == null) {
-              value = VmUtils.readMember(self, key);
-            }
-            result.set(applyLambdaNode.executeBoolean(function, key, value));
-            return !result.get();
-          });
-      return result.get();
+      for (var cursor = self.entries(CursorOption.ANY_ORDER); cursor.advance(); ) {
+        if (applyLambdaNode.executeBoolean(function, cursor.key(), cursor.value())) return true;
+      }
+      return false;
     }
   }
 
@@ -169,11 +125,9 @@ public final class MappingNodes {
     @Specialization
     protected VmMap eval(VmMapping self) {
       var builder = VmMap.builder();
-      self.forceAndIterateMemberValues(
-          (key, def, value) -> {
-            builder.add(key, value);
-            return true;
-          });
+      for (var cursor = self.entries(); cursor.advance(); ) {
+        builder.add(cursor.key(), cursor.value());
+      }
       return builder.build();
     }
   }

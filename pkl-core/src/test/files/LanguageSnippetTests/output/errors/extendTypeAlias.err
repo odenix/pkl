@@ -5,6 +5,10 @@ x | class Baz extends Bar
                       ^^^
 at extendTypeAlias#Baz (file:///$snippetsDir/input/errors/extendTypeAlias.pkl)
 
+x | qux = new Baz {}
+              ^^^
+at extendTypeAlias#qux (file:///$snippetsDir/input/errors/extendTypeAlias.pkl)
+
 xxx | text = renderer.renderDocument(value)
              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 at pkl.base#Module.output.text (pkl:base)

@@ -162,11 +162,14 @@ internal class BinaryEvaluator(
     override fun visitTyped(value: VmTyped) {
       packObjectPreamble(value)
       packer.packArrayHeader(value.vmClass.allRegularPropertyNames.size())
-      value.iterateAlreadyForcedMemberValues(this::doVisitObjectMember)
+      val cursor = value.properties(VmObjectCursor.CursorOption.ALL_VALUES)
+      while (cursor.advance()) {
+        doVisitObjectMember(cursor.key(), cursor.member(), cursor.value())
+      }
     }
 
-    private fun doVisitObjectMember(key: Any, member: ObjectMember, value: Any): Boolean {
-      if (member.isClass || member.isTypeAlias) return true
+    private fun doVisitObjectMember(key: Any, member: ObjectMember, value: Any) {
+      if (member.isClass || member.isTypeAlias) return
 
       packer.packArrayHeader(3)
       when {
@@ -184,13 +187,15 @@ internal class BinaryEvaluator(
         }
       }
       visit(value)
-      return true
     }
 
     override fun visitDynamic(value: VmDynamic) {
       packObjectPreamble(value)
       packer.packArrayHeader(value.regularMemberCount)
-      value.iterateAlreadyForcedMemberValues(this::doVisitObjectMember)
+      val cursor = value.members(VmObjectCursor.CursorOption.ALL_VALUES)
+      while (cursor.advance()) {
+        doVisitObjectMember(cursor.key(), cursor.member(), cursor.value())
+      }
     }
 
     private fun packObjectPreamble(value: VmObjectLike) {
@@ -204,9 +209,9 @@ internal class BinaryEvaluator(
       packer.packArrayHeader(2)
       packer.packInt(CODE_LISTING.toInt())
       packer.packArrayHeader(value.length)
-      value.iterateAlreadyForcedMemberValues { _, _, memberValue ->
-        visit(memberValue)
-        true
+      val cursor = value.elements(VmObjectCursor.CursorOption.ALL_VALUES)
+      while (cursor.advance()) {
+        visit(cursor.value())
       }
     }
 
@@ -214,10 +219,10 @@ internal class BinaryEvaluator(
       packer.packArrayHeader(2)
       packer.packInt(CODE_MAPPING.toInt())
       packer.packMapHeader(value.entryCount)
-      value.iterateAlreadyForcedMemberValues { key, _, memberValue ->
-        visit(key)
-        visit(memberValue)
-        true
+      val cursor = value.entries()
+      while (cursor.advance()) {
+        visit(cursor.key())
+        visit(cursor.value())
       }
     }
 

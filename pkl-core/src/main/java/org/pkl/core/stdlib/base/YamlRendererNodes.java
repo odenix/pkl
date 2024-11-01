@@ -29,6 +29,7 @@ import org.pkl.core.runtime.VmListing;
 import org.pkl.core.runtime.VmMap;
 import org.pkl.core.runtime.VmMapping;
 import org.pkl.core.runtime.VmNull;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
 import org.pkl.core.runtime.VmPair;
 import org.pkl.core.runtime.VmRegex;
 import org.pkl.core.runtime.VmSet;
@@ -37,7 +38,6 @@ import org.pkl.core.runtime.VmUtils;
 import org.pkl.core.stdlib.AbstractRenderer;
 import org.pkl.core.stdlib.ExternalMethod1Node;
 import org.pkl.core.stdlib.PklConverter;
-import org.pkl.core.util.MutableBoolean;
 import org.pkl.core.util.yaml.YamlEmitter;
 
 public final class YamlRendererNodes {
@@ -105,16 +105,14 @@ public final class YamlRendererNodes {
 
     private void visitStream(Object value) {
       if (value instanceof VmListing listing) {
-        var isFirst = new MutableBoolean(true);
-        listing.forceAndIterateMemberValues(
-            ((key, member, element) -> {
-              if (!isFirst.getAndSetFalse()) {
-                startNewLine();
-                builder.append("---");
-              }
-              visit(element);
-              return true;
-            }));
+        var cursor = listing.elements(CursorOption.ALL_VALUES);
+        if (!cursor.advance()) return;
+        visit(cursor.value());
+        while (cursor.advance()) {
+          startNewLine();
+          builder.append("---");
+          visit(cursor.value());
+        }
         return;
       }
 

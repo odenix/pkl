@@ -19,6 +19,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.dsl.Specialization;
 import com.oracle.truffle.api.nodes.IndirectCallNode;
 import org.pkl.core.runtime.*;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
 import org.pkl.core.stdlib.ExternalMethod0Node;
 import org.pkl.core.stdlib.ExternalMethod1Node;
 
@@ -67,13 +68,12 @@ public final class DynamicNodes {
     @Specialization
     protected VmMap eval(VmDynamic self) {
       var builder = VmMap.builder();
-      self.forceAndIterateMemberValues( // could be smarter and skip forcing elements
-          (key, member, value) -> {
-            if (!member.isElement()) {
-              builder.add(key instanceof Identifier ? key.toString() : key, value);
-            }
-            return true;
-          });
+      for (var cursor = self.members(); cursor.advance(); ) {
+        if (!cursor.isElement()) {
+          var key = cursor.key();
+          builder.add(key instanceof Identifier ? key.toString() : key, cursor.value());
+        }
+      }
       return builder.build();
     }
   }
@@ -82,13 +82,9 @@ public final class DynamicNodes {
     @Specialization
     protected VmList eval(VmDynamic self) {
       var builder = VmList.EMPTY.builder();
-      self.forceAndIterateMemberValues( // could be smarter and only force elements
-          (key, member, value) -> {
-            if (member.isElement()) {
-              builder.add(value);
-            }
-            return true;
-          });
+      for (var cursor = self.elements(CursorOption.ALL_VALUES); cursor.advance(); ) {
+        builder.add(cursor.value());
+      }
       return builder.build();
     }
   }

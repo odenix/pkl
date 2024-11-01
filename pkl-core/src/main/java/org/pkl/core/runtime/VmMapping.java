@@ -23,6 +23,10 @@ import javax.annotation.concurrent.GuardedBy;
 import org.graalvm.collections.UnmodifiableEconomicMap;
 import org.pkl.core.ast.member.ListingOrMappingTypeCastNode;
 import org.pkl.core.ast.member.ObjectMember;
+import org.pkl.core.runtime.VmMappingCursors.CachedEntryCursor;
+import org.pkl.core.runtime.VmMappingCursors.EntryCursor;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
+import org.pkl.core.runtime.VmObjectCursor.EmptyCursor;
 import org.pkl.core.util.CollectionUtils;
 import org.pkl.core.util.EconomicMaps;
 import org.pkl.core.util.LateInit;
@@ -70,10 +74,6 @@ public final class VmMapping extends VmListingOrMapping<VmMapping> {
         typeNodeFrame);
   }
 
-  public static boolean isDefaultProperty(Object propertyKey) {
-    return propertyKey == Identifier.DEFAULT;
-  }
-
   @Override
   public VmClass getVmClass() {
     return BaseModule.getMappingClass();
@@ -100,32 +100,20 @@ public final class VmMapping extends VmListingOrMapping<VmMapping> {
   @Override
   @TruffleBoundary
   public Map<Object, Object> export() {
-    var properties = CollectionUtils.newLinkedHashMap(EconomicMaps.size(cachedValues));
-
-    iterateMemberValues(
-        (key, prop, value) -> {
-          if (isDefaultProperty(key)) return true;
-
-          properties.put(VmValue.export(key), VmValue.exportNullable(value));
-          return true;
-        });
-
-    return properties;
+    var entries = CollectionUtils.newLinkedHashMap(EconomicMaps.size(cachedValues));
+    for (var cursor = entries(); cursor.advance(); ) {
+      entries.put(VmValue.export(cursor.key()), VmValue.exportNullable(cursor.value()));
+    }
+    return entries;
   }
 
   @TruffleBoundary
   public Map<Object, Object> toMap() {
-    var properties = CollectionUtils.newLinkedHashMap(EconomicMaps.size(cachedValues));
-
-    forceAndIterateMemberValues(
-        (key, prop, value) -> {
-          if (isDefaultProperty(key)) return true;
-
-          properties.put(key, value);
-          return true;
-        });
-
-    return properties;
+    var entries = CollectionUtils.newLinkedHashMap(EconomicMaps.size(cachedValues));
+    for (var cursor = entries(); cursor.advance(); ) {
+      entries.put(cursor.key(), cursor.value());
+    }
+    return entries;
   }
 
   @Override
@@ -136,6 +124,73 @@ public final class VmMapping extends VmListingOrMapping<VmMapping> {
   @Override
   public <T> T accept(VmValueConverter<T> converter, Iterable<Object> path) {
     return converter.convertMapping(this, path);
+  }
+
+  @Override
+  public VmObjectCursor properties() {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor properties(CursorOption option) {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor elements() {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor elements(CursorOption option) {
+    return new EmptyCursor();
+  }
+
+  @Override
+  public VmObjectCursor elements(CursorOption option1, CursorOption option2) {
+    return new EmptyCursor();
+  }
+
+  public VmObjectCursor entries() {
+    return new EntryCursor(this);
+  }
+
+  public VmObjectCursor entries(CursorOption option) {
+    if (option == CursorOption.ANY_ORDER) {
+      return isShallowForced() ? new CachedEntryCursor(this) : new EntryCursor(this);
+    }
+    if (option == CursorOption.ALL_VALUES) {
+      force(false, false);
+      return new EntryCursor(this);
+    }
+    return new EntryCursor(this);
+  }
+
+  @Override
+  public VmObjectCursor entries(CursorOption option1, CursorOption option2) {
+    var anyOrder = option1 == CursorOption.ANY_ORDER || option2 == CursorOption.ANY_ORDER;
+    var allValues = option1 == CursorOption.ALL_VALUES || option2 == CursorOption.ALL_VALUES;
+    if (anyOrder) {
+      if (isShallowForced()) {
+        return new CachedEntryCursor(this);
+      }
+      if (allValues) {
+        // assertion: does not have LAZY_REQUIRED because there is no option3
+        force(false, false);
+        return new CachedEntryCursor(this);
+      }
+    }
+    return new EntryCursor(this);
+  }
+
+  @Override
+  public VmObjectCursor members() {
+    return entries();
+  }
+
+  @Override
+  public VmObjectCursor members(CursorOption option) {
+    return entries(option);
   }
 
   @Override
@@ -185,8 +240,8 @@ public final class VmMapping extends VmListingOrMapping<VmMapping> {
     return result;
   }
 
-  // assumes mapping has been forced
   public int getEntryCount() {
+    assert isShallowForced();
     if (cachedEntryCount != -1) return cachedEntryCount;
 
     var result = 0;

@@ -19,6 +19,7 @@ import com.oracle.truffle.api.CompilerDirectives;
 import com.oracle.truffle.api.CompilerDirectives.TruffleBoundary;
 import java.util.Iterator;
 import org.organicdesign.fp.xform.Xform;
+import org.pkl.core.runtime.VmObjectCursor.CursorOption;
 
 public abstract class VmCollection extends VmValue implements Iterable<Object> {
   public interface Builder<T extends VmCollection> {
@@ -133,11 +134,9 @@ public abstract class VmCollection extends VmValue implements Iterable<Object> {
       if (elem instanceof Iterable<?> iterable) {
         builder.addAll(iterable);
       } else if (elem instanceof VmListing listing) {
-        listing.forceAndIterateMemberValues(
-            (key, member, value) -> {
-              builder.add(value);
-              return true;
-            });
+        for (var cursor = listing.elements(CursorOption.ALL_VALUES); cursor.advance(); ) {
+          builder.add(cursor.value());
+        }
       } else {
         CompilerDirectives.transferToInterpreter();
         throw new VmExceptionBuilder()
