@@ -163,12 +163,7 @@ class CliJavaCodeGeneratorTest {
 
     val module2JavaFile = outputDir.resolve("java/org/Mod2.java")
     assertContains(
-      """
-      |public final class Mod2 {
-      |  public final Mod1. @NonNull Person person1;
-      |
-      |  public final @NonNull Person person2;
-      """,
+      "public record Mod2(Mod1. @NonNull Person person1, Mod2. @NonNull Person person2) {",
       module2JavaFile.readString()
     )
   }
@@ -238,13 +233,7 @@ class CliJavaCodeGeneratorTest {
 
       assertContains("public final class Module1 {", it)
 
-      assertContains(
-        """
-        |  public static final class Person {
-        |    public final @NonNull String name;
-        """,
-        it
-      )
+      assertContains("public record Person(@NonNull String name)", it)
     }
 
     val module2JavaFile = outputDir.resolve("java/org/bar/Module2.java")
@@ -256,10 +245,7 @@ class CliJavaCodeGeneratorTest {
       assertContains("public final class Module2 {", it)
 
       assertContains(
-        """
-        |  public static final class Group {
-        |    public final Module1. @NonNull Person owner;
-        """,
+        "public record Group(Module1. @NonNull Person owner, @NonNull String name) {",
         it
       )
     }
@@ -272,13 +258,7 @@ class CliJavaCodeGeneratorTest {
 
       assertContains("public final class Module3 {", it)
 
-      assertContains(
-        """
-        |  public static final class Supergroup {
-        |    public final Module2. @NonNull Group owner;
-        """,
-        it
-      )
+      assertContains("public record Supergroup(Module2. @NonNull Group owner) {", it)
     }
   }
 

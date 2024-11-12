@@ -30,8 +30,8 @@ class PObjectToDataObjectOverriddenPropertyTest {
           evaluator
               .evaluate(ModuleSource.modulePath("/codegenPkl/OverriddenProperty.pkl"))
               .as(OverriddenProperty.class);
-      assertThat(result.theClass.bar.get(0).prop1).isEqualTo("hello");
-      assertThat(result.theClass.bar.get(0).prop2).isEqualTo("hello again");
+      assertThat(result.theClass().bar.get(0).prop1).isEqualTo("hello");
+      assertThat(result.theClass().bar.get(0).prop2).isEqualTo("hello again");
     }
   }
 }

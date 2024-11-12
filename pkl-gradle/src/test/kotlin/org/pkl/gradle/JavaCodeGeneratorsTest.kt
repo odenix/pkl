@@ -39,33 +39,14 @@ class JavaCodeGeneratorsTest : AbstractTest() {
     // shading must not affect generated code
     assertThat(text).doesNotContain("org.pkl.thirdparty")
 
-    checkTextContains(
-      text,
-      """
-      |public final class Mod {
-      |  public final @Nonnull Object other;
-    """
-    )
+    checkTextContains(text, "public record Mod(@Nonnull Object other) {")
 
     checkTextContains(
       text,
-      """
-      |  public static final class Person {
-      |    public final @Nonnull String name;
-      |
-      |    public final @Nonnull List<Address> addresses;
-    """
+      "public record Person(@Nonnull String name, @Nonnull List<Address> addresses) {"
     )
 
-    checkTextContains(
-      text,
-      """
-      |  public static final class Address {
-      |    public final @Nonnull String street;
-      |
-      |    public final long zip;
-    """
-    )
+    checkTextContains(text, "public record Address(@Nonnull String street, long zip) {")
   }
 
   @Test

@@ -222,6 +222,9 @@ class JavaCodeGenerator(
     val properties = renameIfReservedWord(pClass.properties).filterValues { !it.isHidden }
     val allProperties = superProperties + properties
 
+    fun PClass.Property.isRegex(): Boolean =
+      (this.type as? PType.Class)?.pClass?.info == PClassInfo.Regex
+
     fun addCtorParameter(
       builder: MethodSpec.Builder,
       propJavaName: String,
@@ -534,7 +537,7 @@ class JavaCodeGenerator(
     }
 
     @Suppress("DuplicatedCode")
-    fun generateClass(): TypeSpec.Builder {
+    fun generateRegularClass(): TypeSpec.Builder {
       val builder =
         TypeSpec.classBuilder(javaPoetClassName.simpleName()).addModifiers(Modifier.PUBLIC)
 
@@ -605,7 +608,70 @@ class JavaCodeGenerator(
       return builder
     }
 
-    return generateClass()
+    fun generateRecordClass(): TypeSpec.Builder {
+      val builder =
+        TypeSpec.recordBuilder(javaPoetClassName.simpleName()).addModifiers(Modifier.PUBLIC)
+
+      if (codegenOptions.implementSerializable) {
+        builder.addSuperinterface(java.io.Serializable::class.java)
+        // serialVersionUID of record types is 0L by default
+      }
+
+      val docComment = pClass.docComment
+      val hasJavadoc = docComment != null && codegenOptions.generateJavadoc
+      if (hasJavadoc) {
+        builder.addJavadoc(renderAsJavadoc(docComment!!))
+      }
+
+      generateDeprecation(
+        pClass.annotations,
+        hasJavadoc,
+        { builder.addAnnotation(it) },
+        { builder.addJavadoc(it) }
+      )
+
+      if (codegenOptions.generateSpringBootConfig) {
+        generateSpringBootAnnotations(builder)
+      }
+
+      var hasRegex = false
+      val ctorBuilder = MethodSpec.constructorBuilder()
+      for ((name, property) in properties) {
+        hasRegex = hasRegex || property.isRegex()
+        val paramBuilder = ParameterSpec.builder(property.type.toJavaPoetName(), name)
+        val hasParamJavadoc = property.docComment != null && codegenOptions.generateJavadoc
+        generateDeprecation(
+          property.annotations,
+          hasParamJavadoc,
+          { paramBuilder.addAnnotation(it) },
+          {}
+        )
+        if (hasParamJavadoc) {
+          paramBuilder.addJavadoc(renderAsJavadoc(property.docComment!!))
+        }
+        ctorBuilder.addParameter(paramBuilder.build())
+        builder.addMethod(generateWithMethod(name, property))
+      }
+      builder.recordConstructor(ctorBuilder.build())
+
+      if (hasRegex) {
+        builder.addMethod(generateEqualsMethod()).addMethod(generateHashCodeMethod())
+      }
+
+      return builder
+    }
+
+    return if (
+      superclass == null &&
+        !pClass.isAbstract &&
+        !pClass.isOpen &&
+        // generate regular class for stateless module class
+        // (consistent with existing codegen-java/kotlin policy
+        // of making stateless module classes non-instantiable)
+        !(isModuleClass && pClass.properties.isEmpty())
+    )
+      generateRecordClass()
+    else generateRegularClass()
   }
 
   private fun generateSerialVersionUIDField(): FieldSpec {

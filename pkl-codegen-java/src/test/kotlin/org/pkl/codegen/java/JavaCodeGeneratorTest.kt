@@ -59,7 +59,7 @@ class JavaCodeGeneratorTest {
         """
         module my.mod
 
-        class PropertyTypes {
+        open class PropertyTypes {
           boolean: Boolean
           int: Int
           float: Float
@@ -89,7 +89,7 @@ class JavaCodeGeneratorTest {
           enum: Direction
         }
 
-        class Other {
+        open class Other {
           name: String
         }
 
@@ -229,9 +229,9 @@ class JavaCodeGeneratorTest {
     val javaCode =
       generateJavaCode(
         """
-      class ClassWithDeprecatedProperty {
-         @Deprecated { message = "property deprecation message" } 
-         deprecatedProperty: Int = 1337
+      open class ClassWithDeprecatedProperty {
+        Deprecated { message = "property deprecation message" } 
+        deprecatedProperty: Int = 1337
       }
     """
           .trimIndent(),
@@ -268,9 +268,9 @@ class JavaCodeGeneratorTest {
     val javaCode =
       generateJavaCode(
         """
-      class ClassWithDeprecatedProperty {
-         @Deprecated { message = "property deprecation message" } 
-         deprecatedProperty: Int = 1337
+      open class ClassWithDeprecatedProperty {
+        @Deprecated { message = "property deprecation message" } 
+        deprecatedProperty: Int = 1337
       }
     """
           .trimIndent(),
@@ -331,7 +331,7 @@ class JavaCodeGeneratorTest {
       |   * @deprecated class deprecation message
       |   */
       |  @Deprecated
-      |  public static final class DeprecatedClass {
+      |  public record DeprecatedClass {
     """
           .trimMargin()
       )
@@ -356,7 +356,7 @@ class JavaCodeGeneratorTest {
       .contains(
         """
       |@Deprecated
-      |public final class DeprecatedModule {
+      |public record DeprecatedModule
     """
           .trimMargin()
       )
@@ -382,9 +382,9 @@ class JavaCodeGeneratorTest {
     val javaCode =
       generateJavaCode(
         """
-      class ClassWithDeprecatedProperty {
-         @Deprecated
-         deprecatedProperty: Int = 1337
+      open class ClassWithDeprecatedProperty {
+        @Deprecated
+        deprecatedProperty: Int = 1337
       }
     """
           .trimIndent(),
@@ -418,9 +418,9 @@ class JavaCodeGeneratorTest {
     val javaCode =
       generateJavaCode(
         """
-        class ClassWithDeprecatedProperty {
-           @Deprecated
-           deprecatedProperty: Int = 1337
+        open class ClassWithDeprecatedProperty {
+          @Deprecated
+          deprecatedProperty: Int = 1337
         }
       """
           .trimIndent(),
@@ -473,7 +473,7 @@ class JavaCodeGeneratorTest {
       .contains(
         """
         |  @Deprecated
-        |  public static final class DeprecatedClass {
+        |  public record DeprecatedClass
       """
           .trimMargin()
       )
@@ -497,7 +497,7 @@ class JavaCodeGeneratorTest {
       .contains(
         """
         |@Deprecated
-        |public final class DeprecatedModule {
+        |public record DeprecatedModule
       """
           .trimMargin()
       )
@@ -509,6 +509,7 @@ class JavaCodeGeneratorTest {
     val javaCode =
       generateJavaCode(
         """
+      open module my.mod
       /// Documenting deprecatedProperty
       @Deprecated { message = "property is deprecated" }
       deprecatedProperty: Int
@@ -688,29 +689,13 @@ class JavaCodeGeneratorTest {
       .compilesSuccessfully()
       .contains(
         """
-        |  public static final class Foo {
-        |    public final long other;
-        |
-        |    public final @NonNull Bar bar;
-        |
-        |    public Foo(@Named("other") long other, @Named("bar") @NonNull Bar bar) {
-        |      this.other = other;
-        |      this.bar = bar;
-        |    }
+        |  public record Foo(long other, @Nonnull Bar bar)
       """
           .trimMargin()
       )
       .contains(
         """
-        |  public static final class Bar {
-        |    public final @NonNull Foo foo;
-        |
-        |    public final @NonNull String other;
-        |
-        |    public Bar(@Named("foo") @NonNull Foo foo, @Named("other") @NonNull String other) {
-        |      this.foo = foo;
-        |      this.other = other;
-        |    }
+        |  public record Bar(@NonNull Foo foo, @NonNull String other)
       """
           .trimMargin()
       )
@@ -792,9 +777,7 @@ class JavaCodeGeneratorTest {
     assertThat(javaCode)
       .contains(
         """
-        |  public static final class Foo {
-        |    public Foo() {
-        |    }
+        |  public record Foo() {}
       """
           .trimMargin()
       )
@@ -946,15 +929,7 @@ class JavaCodeGeneratorTest {
       )
 
     assertThat(javaCode)
-      .contains(
-        """
-      |public final class Mod {
-      |  public final @NonNull String pigeon;
-      |
-      |  public final @NonNull String parrot;
-    """
-          .trimMargin()
-      )
+      .contains("public record Mod(@NonNull String pigeon, @NonNull String parrot) {}".trimMargin())
   }
 
   @Test
@@ -974,10 +949,10 @@ class JavaCodeGeneratorTest {
       )
 
     assertThat(javaCode)
-      .doesNotContain("final String pigeon1")
-      .contains("final @NonNull String parrot1")
-      .doesNotContain("final String pigeon2")
-      .contains("final @NonNull String parrot2")
+      .doesNotContain("String pigeon1")
+      .contains("String parrot1")
+      .doesNotContain("String pigeon2")
+      .contains("String parrot2")
   }
 
   @Test
@@ -1013,13 +988,13 @@ class JavaCodeGeneratorTest {
     val javaCode =
       generateJavaCode(
         """
-      module my.mod
+      open module my.mod
 
       /// module property comment.
       /// can contain /* and */ characters.
       pigeon: Person
 
-      class Person {
+      open class Person {
         /// class property comment.
         /// can contain /* and */ characters.
         name: String
@@ -1059,7 +1034,7 @@ class JavaCodeGeneratorTest {
     val javaCode =
       generateJavaCode(
         """
-      module mod
+      open module mod
 
       uint8: UInt8
       uint16: UInt16
@@ -1078,7 +1053,7 @@ class JavaCodeGeneratorTest {
       mapping: Mapping<Uri, UInt8>
       nullable: UInt16?
 
-      class Foo {
+      open class Foo {
         uint8: UInt8
         uint16: UInt16
         uint32: UInt32
@@ -1174,12 +1149,12 @@ class JavaCodeGeneratorTest {
 
     assertThat(javaCode)
       .contains("import com.example.Annotations;")
-      .contains("public final @Annotations.NonNull String foo;")
+      .contains("@Annotations.NonNull String foo")
 
     javaCode =
       generateJavaCode(
         """
-      module mod
+      open module mod
       
       foo: Int
       bar: Int?
@@ -1222,7 +1197,7 @@ class JavaCodeGeneratorTest {
     val javaCode =
       generateJavaCode(
         """
-      module mod
+      open module mod
 
       typealias Simple = String
       typealias Constrained = String(length >= 3)
@@ -1236,7 +1211,7 @@ class JavaCodeGeneratorTest {
       recursive1: Recursive1
       recursive2: Recursive2
 
-      class Foo {
+      open class Foo {
         simple: Simple
         constrained: Constrained
         parameterized: Parameterized
@@ -1250,7 +1225,7 @@ class JavaCodeGeneratorTest {
       .compilesSuccessfully()
       .contains(
         """
-        |public final class Mod {
+        |public class Mod {
         |  public final @NonNull String simple;
         |
         |  public final @NonNull String constrained;
@@ -1265,7 +1240,7 @@ class JavaCodeGeneratorTest {
       )
       .contains(
         """
-        |  public static final class Foo {
+        |  public static class Foo {
         |    public final @NonNull String simple;
         |
         |    public final @NonNull String constrained;
@@ -1285,7 +1260,7 @@ class JavaCodeGeneratorTest {
     val javaCode =
       generateJavaCode(
         """
-      module mod
+      open module mod
 
       class Person { name: String }
 
@@ -1305,7 +1280,7 @@ class JavaCodeGeneratorTest {
       res8: StringMap
       res9: MMap
 
-      class Foo {
+      open class Foo {
         res1: List2<Int>
         res2: List2<List2<String>>
         res3: Map2<String, Int>
@@ -1325,7 +1300,7 @@ class JavaCodeGeneratorTest {
       .compilesSuccessfully()
       .contains(
         """
-        |public final class Mod {
+        |public class Mod {
         |  public final @NonNull List<@NonNull Long> res1;
         |
         |  public final @NonNull List<@NonNull List<@NonNull String>> res2;
@@ -1348,7 +1323,7 @@ class JavaCodeGeneratorTest {
       )
       .contains(
         """
-        |  public static final class Foo {
+        |  public static class Foo {
         |    public final @NonNull List<@NonNull Long> res1;
         |
         |    public final @NonNull List<@NonNull List<@NonNull String>> res2;
@@ -1383,7 +1358,7 @@ class JavaCodeGeneratorTest {
           .trimIndent()
       )
 
-    assertThat(javaCode).compilesSuccessfully().contains("public final @NonNull String x;")
+    assertThat(javaCode).compilesSuccessfully().contains("@NonNull String x")
   }
 
   @Test
@@ -1422,12 +1397,12 @@ class JavaCodeGeneratorTest {
       )
 
     assertThat(javaCode)
-      .contains("public final @NonNull String v1;")
-      .contains("public final @NonNull String v2;")
-      .contains("public final @NonNull String v3;")
-      .contains("public final @NonNull String v4;")
-      .contains("public final @NonNull String v5;")
-      .contains("public final @NonNull String v6;")
+      .contains("@NonNull String v1")
+      .contains("@NonNull String v2")
+      .contains("@NonNull String v3")
+      .contains("@NonNull String v4")
+      .contains("@NonNull String v5")
+      .contains("@NonNull String v6")
   }
 
   @Test
@@ -1455,12 +1430,12 @@ class JavaCodeGeneratorTest {
       )
 
     assertThat(javaCode)
-      .contains("public final @NonNull String v1;")
-      .contains("public final @NonNull String v2;")
-      .contains("public final @NonNull String v3;")
-      .contains("public final @NonNull String v4;")
-      .contains("public final @NonNull String v5;")
-      .contains("public final @NonNull String v6;")
+      .contains("@NonNull String v1")
+      .contains("@NonNull String v2")
+      .contains("@NonNull String v3")
+      .contains("@NonNull String v4")
+      .contains("@NonNull String v5")
+      .contains("@NonNull String v6")
   }
 
   @Test
@@ -1485,28 +1460,14 @@ class JavaCodeGeneratorTest {
       .contains(
         """
         |@ConfigurationProperties
-        |public final class Mod {
-      """
-          .trimMargin()
-      )
-      .contains(
-        """
-        |  public final @NonNull Server server;
+        |public record Mod(Mod. @NonNull Server server) {
       """
           .trimMargin()
       )
       .contains(
         """
         |  @ConfigurationProperties("server")
-        |  public static final class Server {
-      """
-          .trimMargin()
-      )
-      .contains(
-        """
-        |    public final long port;
-        |
-        |    public final @NonNull List<@NonNull URI> urls;
+        |  public record Server(long port, @NonNull List<@NonNull URI> urls) {}
       """
           .trimMargin()
       )
@@ -1557,10 +1518,9 @@ class JavaCodeGeneratorTest {
     assertThat(javaClientCode)
       .contains(
         """
-        |public final class Client {
-        |  public final @NonNull Library lib;
-        |
-        |  public final Library. @NonNull Person parrot;
+          |public record Client(@NonNull Library lib, Library. @NonNull Person parrot) {
+
+        |public record Client(@NonNull Library lib, @NonNull Person parrot) {}
       """
           .trimMargin()
       )
@@ -1758,7 +1718,7 @@ class JavaCodeGeneratorTest {
         enum: Direction
       }
   
-      class SmallStruct {
+      open class SmallStruct {
         name: String
       }
   
@@ -1871,7 +1831,7 @@ class JavaCodeGeneratorTest {
       module Person
       name: String
       address: Address
-      class Address { city: String }
+      open class Address { city: String }
     """
           .trimIndent(),
         implementSerializable = true
@@ -1880,8 +1840,7 @@ class JavaCodeGeneratorTest {
     assertThat(javaCode)
       .contains(
         """
-        |public final class Person implements Serializable {
-        |  private static final long serialVersionUID = 0L;
+        |public record Person(@NonNull String name, @NonNull Address address) implements Serializable {}
       """
           .trimMargin()
       )
@@ -2051,15 +2010,15 @@ class JavaCodeGeneratorTest {
         )
 
     files.validateContents(
-      "java/x/Module1.java" to listOf("package x;", "public final class Module1 {"),
+      "java/x/Module1.java" to listOf("package x;", "public record Module1"),
       "$MAPPER_PREFIX/com.foo.bar.Module1.properties" to
         listOf("org.pkl.config.java.mapper.com.foo.bar.Module1\\#ModuleClass=x.Module1"),
       // ---
-      "java/z/Module2.java" to listOf("package z;", "public final class Module2 {"),
+      "java/z/Module2.java" to listOf("package z;", "public record Module2"),
       "$MAPPER_PREFIX/com.Module2.properties" to
         listOf("org.pkl.config.java.mapper.com.Module2\\#ModuleClass=z.Module2"),
       // ---
-      "java/w/org/baz/Module3.java" to listOf("package w.org.baz;", "public final class Module3 {"),
+      "java/w/org/baz/Module3.java" to listOf("package w.org.baz;", "public record Module3"),
       "$MAPPER_PREFIX/org.baz.Module3.properties" to
         listOf("org.pkl.config.java.mapper.org.baz.Module3\\#ModuleClass=w.org.baz.Module3"),
     )
@@ -2124,7 +2083,7 @@ class JavaCodeGeneratorTest {
           "package org.bar;",
           "import com.foo.x.Module1;",
           "public final class RenamedModule {",
-          "public final Module1. @NonNull Person owner;"
+          "public record Group(Module1. @NonNull Person owner, @NonNull String name) {"
         ),
       "$MAPPER_PREFIX/org.bar.Module2.properties" to
         listOf(
@@ -2137,7 +2096,7 @@ class JavaCodeGeneratorTest {
           "package com.baz.a.b;",
           "import org.bar.RenamedModule;",
           "public final class Module3 {",
-          "public final RenamedModule. @NonNull Group owner;"
+          "public record Supergroup(RenamedModule. @NonNull Group owner) {"
         ),
       "$MAPPER_PREFIX/org.baz.Module3.properties" to
         listOf(
@@ -2172,12 +2131,11 @@ class JavaCodeGeneratorTest {
 
     files.validateContents(
       "java/x/y/z/renamed_module.java" to
-        listOf("package x.y.z;", "public final class renamed_module {"),
+        listOf("package x.y.z;", "public record renamed_module {"),
       "$MAPPER_PREFIX/a.b.c.MyModule.properties" to
         listOf("org.pkl.config.java.mapper.a.b.c.MyModule\\#ModuleClass=x.y.z.renamed_module"),
       // ---
-      "java/u/v/w/Lower_module.java" to
-        listOf("package u.v.w;", "public final class Lower_module {"),
+      "java/u/v/w/Lower_module.java" to listOf("package u.v.w;", "public record Lower_module {"),
       "$MAPPER_PREFIX/d.e.f.lower_module.properties" to
         listOf("org.pkl.config.java.mapper.d.e.f.lower_module\\#ModuleClass=u.v.w.Lower_module"),
     )
