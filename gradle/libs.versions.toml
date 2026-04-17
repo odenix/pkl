@@ -96,6 +96,7 @@ junitParams = { group = "org.junit.jupiter", name = "junit-jupiter-params", vers
 junitLauncher = { group = "org.junit.platform", name = "junit-platform-launcher", version.ref = "junit" }
 kotlinPlugin = { group = "org.jetbrains.kotlin", name = "kotlin-gradle-plugin", version.ref = "kotlinToolchain" }
 kotlinPoet = { group = "com.squareup", name = "kotlinpoet", version.ref = "kotlinPoet" }
+kotlinPowerAssertPlugin = { module = "org.jetbrains.kotlin.plugin.power-assert:org.jetbrains.kotlin.plugin.power-assert.gradle.plugin", version.ref = "kotlinToolchain" }
 kotlinReflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlinStdLib" }
 kotlinScripting = { group = "org.jetbrains.kotlin", name = "kotlin-scripting-jsr223", version.ref = "kotlinStdLib" }
 #noinspection UnusedVersionCatalogEntry
@@ -132,6 +133,7 @@ checksum = { id = "org.gradle.crypto.checksum", version.ref = "checksumPlugin" }
 errorProne = { id = "net.ltgt.errorprone", version.ref = "errorPronePlugin" }
 ideaExt = { id = "org.jetbrains.gradle.plugin.idea-ext", version.ref = "ideaExtPlugin" }
 jmh = { id = "me.champeau.jmh", version.ref = "jmhPlugin" }
+kotlinPowerAssert = { id = "org.jetbrains.kotlin.plugin.power-assert", version.ref = "kotlinToolchain" }
 kotlinxSerialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlinToolchain" }
 nexusPublish = { id = "io.github.gradle-nexus.publish-plugin", version.ref = "nexusPublishPlugin" }
 #noinspection UnusedVersionCatalogEntry

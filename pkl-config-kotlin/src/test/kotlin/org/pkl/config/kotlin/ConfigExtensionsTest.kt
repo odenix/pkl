@@ -1,5 +1,5 @@
 /*
- * Copyright © 2024-2025 Apple Inc. and the Pkl project authors. All rights reserved.
+ * Copyright © 2024-2026 Apple Inc. and the Pkl project authors. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package org.pkl.config.kotlin
 
-import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 import org.pkl.config.java.ConfigEvaluator
@@ -47,14 +46,13 @@ class ConfigExtensionsTest {
       )
 
     val address = config["pigeon"]["address"].to<Address<String>>()
-    assertThat(address.street).isEqualTo("Fuzzy St.")
+    assert(address.street == "Fuzzy St.")
 
     val pigeon = config["pigeon"].to<Person<String>>()
-    assertThat(pigeon).isNotNull
-    assertThat(pigeon.name).isEqualTo("pigeon")
-    assertThat(pigeon.age).isEqualTo(30)
-    assertThat(pigeon.hobbies).isEqualTo(setOf(READING, SWIMMING))
-    assertThat(pigeon.address.street).isEqualTo("Fuzzy St.")
+    assert(pigeon.name == "pigeon")
+    assert(pigeon.age == 30)
+    assert(pigeon.hobbies == setOf(READING, SWIMMING))
+    assert(pigeon.address.street == "Fuzzy St.")
   }
 
   @Test
@@ -65,7 +63,7 @@ class ConfigExtensionsTest {
     val config = evaluator.evaluate(text("pigeon { address = null }"))
 
     val pigeon = config["pigeon"].to<Person2>()
-    assertThat(pigeon.address).isNull()
+    assert(pigeon.address == null)
   }
 
   @Test
@@ -86,17 +84,17 @@ class ConfigExtensionsTest {
       evaluator.evaluate(text("""pigeon { address1 { street = "Fuzzy St." }; address2 = null }"""))
 
     val address1 = config["pigeon"]["address1"].to<Address<String>?>()
-    assertThat(address1).isEqualTo(Address(street = "Fuzzy St."))
+    assert(address1 == Address(street = "Fuzzy St."))
 
     val address2 = config["pigeon"]["address2"].to<Address<String>?>()
-    assertThat(address2).isNull()
+    assert(address2 == null)
 
     val e = assertThrows<ConversionException> { config["pigeon"]["address2"].to<Address<String>>() }
-    assertThat(e)
-      .hasMessage(
+    assert(
+      e.message ==
         "Expected a non-null value but got `null`. " +
           "To allow null values, convert to a nullable Kotlin type, for example `String?`."
-      )
+    )
   }
 
   @Test
@@ -115,9 +113,9 @@ class ConfigExtensionsTest {
       )
 
     val pigeon = config["pigeon"].to<PersonWithDefaults>()
-    assertThat(pigeon.name).isEqualTo("Pigeon")
-    assertThat(pigeon.age).isEqualTo(42)
-    assertThat(pigeon.hobbies).isEqualTo(listOf<String>())
+    assert(pigeon.name == "Pigeon")
+    assert(pigeon.age == 42)
+    assert(pigeon.hobbies == listOf<String>())
   }
 
   // check that java converter factory still kicks in
@@ -137,9 +135,9 @@ class ConfigExtensionsTest {
       )
 
     val pigeon = config["pigeon"].to<JavaPerson>()
-    assertThat(pigeon.name).isEqualTo("Pigeon")
-    assertThat(pigeon.age).isEqualTo(42)
-    assertThat(pigeon.hobbies).isEqualTo(listOf<String>())
+    assert(pigeon.name == "Pigeon")
+    assert(pigeon.age == 42)
+    assert(pigeon.hobbies == listOf<String>())
   }
 
   @Test
@@ -152,8 +150,7 @@ class ConfigExtensionsTest {
       )
 
     val friends = config["friends"].to<List<SimplePerson>>()
-    assertThat(friends)
-      .isEqualTo(listOf(SimplePerson("lilly"), SimplePerson("bob"), SimplePerson("susan")))
+    assert(friends == listOf(SimplePerson("lilly"), SimplePerson("bob"), SimplePerson("susan")))
   }
 
   @Test
@@ -166,14 +163,14 @@ class ConfigExtensionsTest {
       )
 
     val friends = config["friends"].to<Map<String, SimplePerson>>()
-    assertThat(friends)
-      .isEqualTo(
+    assert(
+      friends ==
         mapOf(
           "l" to SimplePerson("lilly"),
           "b" to SimplePerson("bob"),
           "s" to SimplePerson("susan"),
         )
-      )
+    )
   }
 
   @Test
@@ -184,14 +181,14 @@ class ConfigExtensionsTest {
       )
 
     val friends = config["friends"].to<Map<String, SimplePerson>>()
-    assertThat(friends)
-      .isEqualTo(
+    assert(
+      friends ==
         mapOf(
           "l" to SimplePerson("lilly"),
           "b" to SimplePerson("bob"),
           "s" to SimplePerson("susan"),
         )
-      )
+    )
   }
 
   @Test
@@ -208,7 +205,7 @@ class ConfigExtensionsTest {
         )
       )
     val allEnumValues = config["allEnumValues"].to<Set<MangledNameEnum>>()
-    assertThat(allEnumValues).isEqualTo(MangledNameEnum.entries.toSet())
+    assert(allEnumValues == MangledNameEnum.entries.toSet())
   }
 
   data class SimplePerson(val name: String)

@@ -33,6 +33,7 @@ dependencies {
   implementation(libs.spotlessPlugin)
   implementation(libs.kotlinPlugin) { exclude(module = "kotlin-android-extensions") }
   implementation(libs.shadowPlugin)
+  implementation(libs.kotlinPowerAssertPlugin)
 
   // fix from the Gradle team: makes version catalog symbols available in build scripts
   // see here for more: https://github.com/gradle/gradle/issues/15383

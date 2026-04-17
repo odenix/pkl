@@ -13,13 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@file:OptIn(ExperimentalKotlinGradlePluginApi::class)
+
 import java.net.URI
 import org.gradle.accessors.dm.LibrariesForLibs
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 
 plugins {
   `jvm-test-suite`
   id("pklKotlinBase")
+  id("org.jetbrains.kotlin.plugin.power-assert")
 }
 
 val buildInfo = project.extensions.getByType<BuildInfo>()

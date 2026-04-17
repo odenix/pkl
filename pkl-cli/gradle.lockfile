@@ -111,6 +111,7 @@ org.jetbrains.kotlin:kotlin-klib-abi-reader:2.3.20=kotlinInternalAbiValidation
 org.jetbrains.kotlin:kotlin-klib-commonizer-embeddable:2.3.20=kotlinKlibCommonizerClasspath
 org.jetbrains.kotlin:kotlin-metadata-jvm:2.3.20=kotlinInternalAbiValidation
 org.jetbrains.kotlin:kotlin-native-prebuilt:2.0.21=kotlinNativeBundleConfiguration
+org.jetbrains.kotlin:kotlin-power-assert-compiler-plugin-embeddable:2.3.20=kotlinCompilerPluginClasspathTest
 org.jetbrains.kotlin:kotlin-reflect:1.6.10=kotlinBuildToolsApiClasspath,kotlinCompilerClasspath,kotlinKlibCommonizerClasspath
 org.jetbrains.kotlin:kotlin-reflect:2.2.21=swiftExportClasspathResolvable
 org.jetbrains.kotlin:kotlin-script-runtime:2.2.21=swiftExportClasspathResolvable
